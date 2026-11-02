@@ -10,7 +10,13 @@
       "prach",
       "graf",
       "zina"
-    ]
+    ],
+    "cast": "blatnoy",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "graf": {
     "name": "Граф",
@@ -23,7 +29,13 @@
       "zub",
       "buh",
       "zina"
-    ]
+    ],
+    "cast": "blatnoy",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "buh": {
     "name": "Бухгалтер",
@@ -36,7 +48,13 @@
       "graf",
       "gvo",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      480,
+      1140
+    ],
+    "voice": ""
   },
   "gvo": {
     "name": "Гвоздев",
@@ -49,7 +67,13 @@
       "buh",
       "str",
       "zina"
-    ]
+    ],
+    "cast": "authority",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "str": {
     "name": "Страж-9",
@@ -62,7 +86,13 @@
       "gvo",
       "sm",
       "zina"
-    ]
+    ],
+    "cast": "authority",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "sm": {
     "name": "Подземный Смотритель",
@@ -75,7 +105,13 @@
       "str",
       "gen",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "gen": {
     "name": "Генерал-инспектор",
@@ -88,7 +124,13 @@
       "sm",
       "mat",
       "zina"
-    ]
+    ],
+    "cast": "authority",
+    "hours": [
+      600,
+      1080
+    ],
+    "voice": ""
   },
   "mat": {
     "name": "Мать-Смотрительница",
@@ -101,12 +143,18 @@
       "gen",
       "serg",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      480,
+      1140
+    ],
+    "voice": ""
   },
   "serg": {
     "name": "Сергеич",
     "home": 2,
-    "portrait": "gvo",
+    "portrait": "serg",
     "role": "Усталый практичный сержант.",
     "goal": "Закончить смену.",
     "boss": false,
@@ -114,12 +162,18 @@
       "mat",
       "steam",
       "zina"
-    ]
+    ],
+    "cast": "authority",
+    "hours": [
+      420,
+      1200
+    ],
+    "voice": ""
   },
   "steam": {
     "name": "Банный Философ",
     "home": 4,
-    "portrait": "sm",
+    "portrait": "steam",
     "role": "Разговорчивый банщик.",
     "goal": "Найти свою одежду.",
     "boss": false,
@@ -127,12 +181,18 @@
       "serg",
       "cook",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      600,
+      1290
+    ],
+    "voice": ""
   },
   "cook": {
     "name": "Седой",
     "home": 9,
-    "portrait": "zub",
+    "portrait": "cook",
     "role": "Старый заключённый ШИЗО, терпеливый.",
     "goal": "Сберечь пайку.",
     "boss": true,
@@ -140,12 +200,18 @@
       "steam",
       "zina",
       "zina"
-    ]
+    ],
+    "cast": "blatnoy",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "zina": {
     "name": "Зинаида",
     "home": 1,
-    "portrait": "mat",
+    "portrait": "zina",
     "role": "Любопытная торговка сплетнями.",
     "goal": "Обменять новости на услуги.",
     "boss": false,
@@ -163,12 +229,18 @@
       "cook",
       "kol",
       "prach"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      480,
+      1200
+    ],
+    "voice": ""
   },
   "kol": {
     "name": "Колян",
     "home": 0,
-    "portrait": "graf",
+    "portrait": "kol",
     "role": "Нервный молодой сокамерник.",
     "goal": "Не остаться без пайки.",
     "boss": false,
@@ -176,12 +248,18 @@
       "zina",
       "prach",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
   },
   "prach": {
     "name": "Прач",
     "home": 6,
-    "portrait": "buh",
+    "portrait": "prach",
     "role": "Наблюдательный прачечный мастер.",
     "goal": "Найти пропавший носок.",
     "boss": false,
@@ -189,6 +267,69 @@
       "kol",
       "zub",
       "zina"
-    ]
+    ],
+    "cast": "muzhik",
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
+  },
+  "vertuha": {
+    "name": "Вертухай",
+    "home": 3,
+    "portrait": "vertuha",
+    "role": "Старшина с ключами, скучающий и подозрительный. Любит порядок и маленькие взятки.",
+    "goal": "Дослужить смену без ЧП и без бумаг.",
+    "boss": true,
+    "cast": "authority",
+    "contacts": [
+      "gvo",
+      "gen",
+      "serg"
+    ],
+    "hours": [
+      360,
+      1380
+    ],
+    "voice": ""
+  },
+  "girya": {
+    "name": "Гиря",
+    "home": 13,
+    "portrait": "girya",
+    "role": "Огромный блатной спортсмен. Уважает силу и тех, кто не ноет.",
+    "goal": "Держать тренажёрку и не дать зоне расслабиться.",
+    "boss": true,
+    "cast": "blatnoy",
+    "contacts": [
+      "zub",
+      "graf",
+      "zina"
+    ],
+    "hours": [
+      360,
+      1320
+    ],
+    "voice": ""
+  },
+  "mamka": {
+    "name": "Мамка",
+    "home": 12,
+    "portrait": "mamka",
+    "role": "Усталая женщина с передачкой, которая приехала за триста километров.",
+    "goal": "Увидеть сына и передать, что дома всё нормально.",
+    "boss": false,
+    "cast": "civil",
+    "contacts": [
+      "zina",
+      "mat",
+      "serg"
+    ],
+    "hours": [
+      600,
+      1020
+    ],
+    "voice": ""
   }
 }

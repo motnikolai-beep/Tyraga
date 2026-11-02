@@ -66,7 +66,12 @@ def generate_chat(engine,w,k,text,on_text,cancel):
  count=max(0,int(engine.cfg['CHAT_HISTORY_MESSAGES']));hist=hist[-count:] if count else []
  if hist and hist[0]['role']=='assistant':hist=hist[1:]
  ctx={'место':c['location'],'отношение':c['relationship'],'уважуха':c['respect']['public_respect'],'карма':w.s['karma'],'память':c['memory'],'факты':c['known_facts'],'слухи':c['heard_rumors'],'долги':c['obligations']}
- system=PROMPT.format(name=n['name'],role=n['role'])+'\n'+json.dumps(ctx,ensure_ascii=False)
+ rank=ctx['player']['rank'];beaten=ctx['player'].get('bosses_beaten') or [];phase=ctx.get('phase','')
+ extra='\nСейчас %s, %s. Игрок по касте: %s.'%(ctx.get('time'),phase,rank)
+ if beaten:extra+=' Он уже побеждал сильных: '+', '.join(beaten)+'. Относись к нему осторожнее и с уважением, но не льсти.'
+ if ctx['player'].get('dropped'):extra+=' Он опущенный: держи дистанцию, как принято в зоне.'
+ if phase=='ночь':extra+=' Ночь, отбой: говори тише и короче.'
+ system=PROMPT.format(name=n['name'],role=n['role'])+extra+'\n'+json.dumps(ctx,ensure_ascii=False)
  reply=plain(engine.chat([{'role':'system','content':system}]+hist+[{'role':'user','content':text}],on_text=on_text,cancel=cancel));reply=re.sub(r'^\s*'+re.escape(n['name'])+r'\s*:\s*','',reply,flags=re.I).strip()
  out=zero();threat={'speaker':'player','target':'npc','evidence':text,'method':'exact_direct_threat'} if exact_threat(text) else None
  normal=engine.cfg['CHAT_FAST_MODE'].lower()!='true'
