@@ -18,7 +18,8 @@
   ИИ-потоки, таймер времени, автоподхват сцен.
 - `minigames.py` — всплывающие мини-игры (chow, porridge, pushups, poker, chess,
   tunnel, dance, factory). `battle_ui.py` — дуэли.
-- `tools/make_icons.py` — генератор иконок предметов + `assets/icon_sheet.png`.
+- `assets/icons/*.png` — иконки предметов (нарезка коллажа пользователя 8×4 + 3 отдельные),
+  `tools/slice_icons.py` — нарезка и сборка `assets/icon_sheet.png`.
 - `tests/` — 40 тестов (логика, сюжет целиком, миграция сейва, UI на заглушке tkinter).
 
 ## Правила дизайна, которые просил пользователь

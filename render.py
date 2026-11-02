@@ -186,6 +186,9 @@ class SceneRenderer:
         if world.is_night():
             d.text((W - 120, 24), "ОТБОЙ", font=font(14, True), fill=BLUE)
 
+        # ресурсы с иконками под верхней плашкой
+        self._resources(img, d, world, 158, 96)
+
         # карточки NPC в «сцене»
         present = world.witnesses()
         selected = ui.get("npc")
@@ -258,6 +261,32 @@ class SceneRenderer:
             y -= 6
         return img.convert("RGB"), hits
 
+    def _resources(self, img, d, world, x, y):
+        """Полоски HP / еды / сил + счётчики рублей и сигарет — с вашими иконками."""
+        s = world.s
+        items = [
+            ("heart", s["hp"], s["hp_max"], RED),
+            ("soup", s["food"], 100, (198, 150, 86)),
+            ("barbell", s["stamina"], s["stamina_max"], (150, 176, 200)),
+        ]
+        size = 26
+        for name, val, mx, col in items:
+            ic = self.icon(name, size)
+            if ic is not None:
+                img.alpha_composite(ic, (x, y))
+            bx = x + size + 6
+            d.rectangle((bx, y + 5, bx + 108, y + 21), fill=(10, 16, 23, 220))
+            frac = max(0.0, min(1.0, val / max(1, mx)))
+            d.rectangle((bx, y + 5, bx + 108 * frac, y + 21), fill=col)
+            d.text((bx + 54, y + 13), "%d" % val, font=font(11, True), fill=(12, 16, 22), anchor="mm")
+            y += size + 4
+        for name, val in (("money", s["rub"]), ("cig", world.inv("cig"))):
+            ic = self.icon(name, size)
+            if ic is not None:
+                img.alpha_composite(ic, (x, y))
+            d.text((x + size + 8, y + size // 2), str(val), font=font(13, True), fill=FG, anchor="lm")
+            y += size + 4
+
     def _npc_card(self, img, d, k, box, world, active, hover):
         x0, y0, x1, y1 = box
         w, h = x1 - x0, y1 - y0
@@ -276,7 +305,7 @@ class SceneRenderer:
         boss = BOSSES.get(k)
         dead = k in world.s["defeated"]
         if boss and not dead:
-            d.text((x0 + w - 26, y0 + 6), "★", font=font(18, True), fill=GOLD)
+            d.text((x0 + 7, y0 + 5), "★", font=font(17, True), fill=GOLD)
         if dead:
             d.line((x0 + 6, y0 + 6, x1 - 6, y1 - 50), fill=RED, width=3)
         # HP
@@ -402,14 +431,23 @@ class SceneRenderer:
 
     # ------------------------------------------------------------ инвентарь-иконки
     def icon(self, name, size=56):
+        """Иконка из assets/icons/<name>.png (или None, если такой нет)."""
         key = ("icon", name, size)
         if key in self.cache:
             return self.cache[key]
-        path = os.path.join(ASSETS, "item_%s.png" % name)
+        path = os.path.join(ASSETS, "icons", "%s.png" % name)
+        if not os.path.isfile(path):
+            path = os.path.join(ASSETS, "item_%s.png" % name)
         if not os.path.isfile(path):
             return None
         im = Image.open(path).convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
         self.cache[key] = im
+        return im
+
+    def icon_or_blank(self, name, size=56):
+        im = self.icon(name, size)
+        if im is None:
+            im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         return im
 
 

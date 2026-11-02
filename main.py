@@ -688,57 +688,57 @@ class App:
             cards.append((title, subtitle, icon, fn, note, allowed))
 
         loc = LOCATIONS[s['loc']]['key']
-        add('Осмотреться', 'Оглядеться, найти мелочь или зацепку', 'book',
+        add('Осмотреться', 'Оглядеться, найти мелочь или зацепку', 'magnifier',
             lambda: self.do_action('look'), '10 мин')
         add('Поискать схрон', 'Схроны, нычки и чужие секреты', 'rat',
             lambda: self.do_action('search'), '30 мин')
         add('Перекур', 'Сигарета, разговор, минута покоя', 'cig', lambda: self.do_action('smoke'), '5 мин')
         job = next((j for j in JOBS.values() if j['loc'] == s['loc']), None)
         if job:
-            add('Работать', job['name'] + ' · +%d₽' % job['pay'], 'sack',
+            add('Работать', job['name'] + ' · +%d₽' % job['pay'], 'medal',
                 lambda: self.do_action('work'), '%d мин' % job['time'])
         if loc == 'mess':
             meal, dish = self.world.meal_now()
             add('Поесть', (dish or 'сейчас не кормят') + ' · кормят 07:00, 12:00, 18:00', 'soup',
                 lambda: self.do_action('eat'), '20 мин', bool(meal), 'время')
         if loc == 'gym':
-            add('Тренажёрка', 'Тянуть железо и качать силу', 'fist', lambda: self.do_action('train'), '60 мин')
-            add('Помериться силой', 'Мини-игра: подходы', 'star', lambda: self.minigame('pushups'), '30 мин')
+            add('Тренажёрка', 'Тянуть железо и качать силу', 'barbell', lambda: self.do_action('train'), '60 мин')
+            add('Помериться силой', 'Мини-игра: подходы', 'gloves', lambda: self.minigame('pushups'), '30 мин')
         if loc == 'temple':
-            add('Помолиться', 'Господь всё слышит, карму чистит', 'cross', lambda: self.do_action('pray'), '20 мин')
+            add('Помолиться', 'Господь всё слышит, карму чистит', 'candle', lambda: self.do_action('pray'), '20 мин')
             add('Поговорить с Господом', 'Признание, вопрос или благодарность', 'cross',
                 self.talk_god, '15 мин')
         if loc == 'visit':
-            add('Свиданка', 'Поговорить с матерью, взять передачку', 'phone',
+            add('Свиданка', 'Поговорить с матерью, взять передачку', 'ear',
                 lambda: self.do_action('visit'), '60 мин', not s['visit'].get('used'))
         if loc == 'cam':
-            add('Сварить чифирь', 'Из чая — напиток для взрослых', 'fire',
+            add('Сварить чифирь', 'Из чая — напиток для взрослых', 'pot',
                 lambda: self.do_action('cook'), '25 мин', self.world.has('tea'))
-            add('Лечь на шконку', 'Только ночью, после 21:00', 'clock',
+            add('Лечь на шконку', 'Только ночью, после 21:00', 'bunk',
                 lambda: self.do_action('sleep'), 'до утра', self.world.can_sleep(),
                 'только ночью' if not self.world.can_sleep() else '')
-            add('Спрятать вещь в схрон', 'Убрать из сумки то, что ищет шмон', 'wall',
+            add('Спрятать вещь в схрон', 'Убрать из сумки то, что ищет шмон', 'lock',
                 lambda: self.open_stash(), '10 мин')
         if loc == 'cellar':
-            add('Копать тоннель', 'Мини-игра «Подкоп» — шесть участков', 'wall',
+            add('Копать тоннель', 'Мини-игра «Подкоп» — шесть участков', 'bars',
                 lambda: self.minigame('tunnel'), '30 мин')
         if loc == 'club':
-            add('Покер', 'Одна карта, большой блеф', 'cards',
+            add('Покер', 'Одна карта, большой блеф', 'chess',
                 lambda: self.minigame('poker'), '20 мин', self.world.inv('cig') >= 5)
-            add('Шахматы Лема', 'Тактика на троих', 'book', lambda: self.minigame('chess'), '20 мин')
+            add('Шахматы Лема', 'Тактика на троих', 'chess', lambda: self.minigame('chess'), '20 мин')
         if loc == 'bath':
-            add('Танцы на стрелках', 'Баня, пар и ритм', 'star', lambda: self.minigame('dance'), '20 мин')
+            add('Танцы на стрелках', 'Баня, пар и ритм', 'radio', lambda: self.minigame('dance'), '20 мин')
         if loc == 'mess':
             add('Сапёр в каше', 'Найти в баланде то, что не съедобно', 'soup',
                 lambda: self.minigame('porridge'), '15 мин')
         if loc == 'laundry':
-            add('Фейк-завод', 'Запустить слух о ком надо', 'book',
+            add('Фейк-завод', 'Запустить слух о ком надо', 'radio',
                 lambda: self.minigame('factory'), '20 мин')
-        add('Встретиться с NPC', 'Решения: помочь, украсть, сдать', 'coin',
+        add('Встретиться с NPC', 'Решения: помочь, украсть, подставить, сдать', 'magnifier',
             self.decisions, '10 мин', bool(self.npc))
-        add('Бросить вызов', 'Дуэль или босс-испытание', 'fist',
+        add('Бросить вызов', 'Дуэль или босс-испытание', 'gloves',
             lambda: self.fight(None), '10 мин', bool(self.npc))
-        add('Поговорить с NPC', 'Открыть диалог снизу', 'phone',
+        add('Поговорить с NPC', 'Открыть диалог снизу', 'book',
             self.focus_entry, '', bool(self.npc))
         for i, (title, subtitle, icon, fn, note, allowed) in enumerate(cards):
             c = Card(grid, self, title, subtitle, icon, fn, disabled=not allowed, note=note)
