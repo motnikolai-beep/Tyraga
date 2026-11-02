@@ -279,6 +279,7 @@ class App:
             if notes:
                 self.after_time(notes)
         self.refresh_hud()
+        self.redraw()
         self.root.after(IDLE_TICK_MS, self.tick)
 
     def after_time(self, notes=None):
