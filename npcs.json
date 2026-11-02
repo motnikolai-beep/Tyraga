@@ -1,0 +1,194 @@
+{
+  "zub": {
+    "name": "Зубило",
+    "home": 0,
+    "portrait": "zub",
+    "role": "Прямой немногословный силач. Ценит верность.",
+    "goal": "Найти надёжного союзника.",
+    "boss": true,
+    "contacts": [
+      "prach",
+      "graf",
+      "zina"
+    ]
+  },
+  "graf": {
+    "name": "Граф",
+    "home": 5,
+    "portrait": "graf",
+    "role": "Обаятельный хитрый жулик.",
+    "goal": "Заработать на услугах.",
+    "boss": true,
+    "contacts": [
+      "zub",
+      "buh",
+      "zina"
+    ]
+  },
+  "buh": {
+    "name": "Бухгалтер",
+    "home": 7,
+    "portrait": "buh",
+    "role": "Сухой циничный бухгалтер.",
+    "goal": "Найти участника сомнительной сделки.",
+    "boss": false,
+    "contacts": [
+      "graf",
+      "gvo",
+      "zina"
+    ]
+  },
+  "gvo": {
+    "name": "Гвоздев",
+    "home": 3,
+    "portrait": "gvo",
+    "role": "Властный начальник, любит порядок и кошек.",
+    "goal": "Подготовиться к проверке.",
+    "boss": true,
+    "contacts": [
+      "buh",
+      "str",
+      "zina"
+    ]
+  },
+  "str": {
+    "name": "Страж-9",
+    "home": 6,
+    "portrait": "str",
+    "role": "Ржавый робот-бюрократ.",
+    "goal": "Проверять пропуска.",
+    "boss": true,
+    "contacts": [
+      "gvo",
+      "sm",
+      "zina"
+    ]
+  },
+  "sm": {
+    "name": "Подземный Смотритель",
+    "home": 11,
+    "portrait": "sm",
+    "role": "Тихий подозрительный затворник.",
+    "goal": "Сберечь покой в подвалах.",
+    "boss": true,
+    "contacts": [
+      "str",
+      "gen",
+      "zina"
+    ]
+  },
+  "gen": {
+    "name": "Генерал-инспектор",
+    "home": 10,
+    "portrait": "gen",
+    "role": "Холодно-вежливый, требовательный.",
+    "goal": "Найти несоответствия в бумагах.",
+    "boss": true,
+    "contacts": [
+      "sm",
+      "mat",
+      "zina"
+    ]
+  },
+  "mat": {
+    "name": "Мать-Смотрительница",
+    "home": 8,
+    "portrait": "mat",
+    "role": "Суровая забота о кошках.",
+    "goal": "Накормить кошек.",
+    "boss": true,
+    "contacts": [
+      "gen",
+      "serg",
+      "zina"
+    ]
+  },
+  "serg": {
+    "name": "Сергеич",
+    "home": 2,
+    "portrait": "gvo",
+    "role": "Усталый практичный сержант.",
+    "goal": "Закончить смену.",
+    "boss": false,
+    "contacts": [
+      "mat",
+      "steam",
+      "zina"
+    ]
+  },
+  "steam": {
+    "name": "Банный Философ",
+    "home": 4,
+    "portrait": "sm",
+    "role": "Разговорчивый банщик.",
+    "goal": "Найти свою одежду.",
+    "boss": false,
+    "contacts": [
+      "serg",
+      "cook",
+      "zina"
+    ]
+  },
+  "cook": {
+    "name": "Седой",
+    "home": 9,
+    "portrait": "zub",
+    "role": "Старый заключённый ШИЗО, терпеливый.",
+    "goal": "Сберечь пайку.",
+    "boss": true,
+    "contacts": [
+      "steam",
+      "zina",
+      "zina"
+    ]
+  },
+  "zina": {
+    "name": "Зинаида",
+    "home": 1,
+    "portrait": "mat",
+    "role": "Любопытная торговка сплетнями.",
+    "goal": "Обменять новости на услуги.",
+    "boss": false,
+    "contacts": [
+      "zub",
+      "graf",
+      "buh",
+      "gvo",
+      "str",
+      "sm",
+      "gen",
+      "mat",
+      "serg",
+      "steam",
+      "cook",
+      "kol",
+      "prach"
+    ]
+  },
+  "kol": {
+    "name": "Колян",
+    "home": 0,
+    "portrait": "graf",
+    "role": "Нервный молодой сокамерник.",
+    "goal": "Не остаться без пайки.",
+    "boss": false,
+    "contacts": [
+      "zina",
+      "prach",
+      "zina"
+    ]
+  },
+  "prach": {
+    "name": "Прач",
+    "home": 6,
+    "portrait": "buh",
+    "role": "Наблюдательный прачечный мастер.",
+    "goal": "Найти пропавший носок.",
+    "boss": false,
+    "contacts": [
+      "kol",
+      "zub",
+      "zina"
+    ]
+  }
+}

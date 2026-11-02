@@ -1,0 +1,428 @@
+{
+ "generated": "20261102_140907_379903",
+ "files": [
+  {
+   "path": ".env",
+   "bytes": 3394,
+   "sha256": "1c2996235ba6bcfac21c86ba30e3bab038c138094ece755793f6628830516e43",
+   "included_as_text": true
+  },
+  {
+   "path": "ai.py",
+   "bytes": 11091,
+   "sha256": "675bbf5477925f1756945d27bf21317ca38542d52b9e79654a7a2e64a2ab8f17",
+   "included_as_text": true
+  },
+  {
+   "path": "assets/accountant.jpg",
+   "bytes": 32560,
+   "sha256": "ca66f80f0e142b2cdb7cede41b63d70a1397677789e496662152500a74319273",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/buh.jpg",
+   "bytes": 35442,
+   "sha256": "2d14b163e8e73a1e763c32f53692be8b388495ceac1c9a05df49bb70e3207a71",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/gen.jpg",
+   "bytes": 33284,
+   "sha256": "adc456fff69c6c860685e531a365a39c3dba3e5f0003c81e4d677ab703a9a034",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/general.jpg",
+   "bytes": 30557,
+   "sha256": "93e27f21442c2311926bd54138799ae924f6ec308ce7850060155cac9fd75a04",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/graf.jpg",
+   "bytes": 35355,
+   "sha256": "7284fb843b2ba0ef483b7234b90d63afa34d029dcf46de0f4f9ad579c87c4a0f",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/gvo.jpg",
+   "bytes": 37496,
+   "sha256": "2c64275525d9cc38f886bbe27e3ffd2850b6368556ff390c6da6128743a36dde",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_book.png",
+   "bytes": 12391,
+   "sha256": "3ba33a886acbb2b839bd64e264e6e0356915937d0b0129c727d2d11bee11c614",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_cig.png",
+   "bytes": 7528,
+   "sha256": "4f227231d5ef89c4eceb84a6d846415e84355e3731808976368897478f27e40d",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_clock.png",
+   "bytes": 10709,
+   "sha256": "e92d870c8f26973a927866fa0b03688f89ccf1e77b0daa0854b374471548fa77",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_coin.png",
+   "bytes": 10817,
+   "sha256": "a328efc44e6faa08633148cd78f8bcf92f6368875c6f2f73dbd528425e7bcafc",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_heart.png",
+   "bytes": 10989,
+   "sha256": "2cae5f1054be5311e9e6f6487db2a1a4e9f05993fcb979f100b0145c62902505",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_radio.png",
+   "bytes": 8578,
+   "sha256": "557dd567256036b41740cf1aba5341486c86f98d4633b02cf07a4435ebe1cd23",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_rat.png",
+   "bytes": 12491,
+   "sha256": "2e101fcfbf86a6cfa40ef6772994059b5e8692cbe75103ac993f43356722bb14",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_soup.png",
+   "bytes": 10436,
+   "sha256": "5accb30a43bdc6b9b18ed9e2225dbcadf6117e37184e0139137063a7d7c6a639",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/icon_star.png",
+   "bytes": 10109,
+   "sha256": "127797053dee62b90059dd03255e3cb27fbeac816c651f4d3ecbe264f09b4d2a",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/keeper.jpg",
+   "bytes": 31883,
+   "sha256": "d8cd732bc0826b816e30cad0df1939eeab23c475cf6d4d0e824db61dd351ace0",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_0.jpg",
+   "bytes": 322854,
+   "sha256": "36cdc9cda91af198544e00186b1b29fffbdc51c85911c5ff14f642acc2c07f5c",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_1.jpg",
+   "bytes": 286626,
+   "sha256": "742c64a0ec86f34e2cf8dfe043d42153c064f92d99f2b79cab810c6b145cf715",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_10.jpg",
+   "bytes": 300481,
+   "sha256": "e8ac5f5f8b4e2be612188e13352202fa32307345de5d300a6daf85b1e38560b0",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_11.jpg",
+   "bytes": 335997,
+   "sha256": "dfeb74433daf02a10aef3a3e90da6f6ddd8d471ca207dbced990f9f4846e8d30",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_2.jpg",
+   "bytes": 384445,
+   "sha256": "6433e8745e837f2f63117277f4275c08d6d1812fa93e7b10760c532f6ec39b76",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_3.jpg",
+   "bytes": 365719,
+   "sha256": "82e5fb1f86c0b8bfc9925b05b1098804cd0671ae01c5ebf236d8e6471737062e",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_4.jpg",
+   "bytes": 329681,
+   "sha256": "a25102a06d9d6a1cddd043c88921a27413d7a6545a638cc23011e452c3276ae3",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_5.jpg",
+   "bytes": 351974,
+   "sha256": "06776939fae7668dec8303b85df4277797dbd6f7e639bc48494fcd28d484d93d",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_6.jpg",
+   "bytes": 349673,
+   "sha256": "67bf349a6b1003c21a2474a5b27d295267c9b59e49c21f3e04540c601ff733fc",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_7.jpg",
+   "bytes": 377633,
+   "sha256": "b9e017c3416ad1788c8dd81d05cbc88322e16faa10873ed73ddbd2dee5f5c764",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_8.jpg",
+   "bytes": 343910,
+   "sha256": "beecf74e749eb88f54c58b7094f4f92422270e70ac6070e9f19fe6fb59bd1398",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/loc_9.jpg",
+   "bytes": 266416,
+   "sha256": "96144edfad75552343f7733c13aac5a0666258021b40b5b5451344dfbf704962",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/mat.jpg",
+   "bytes": 38007,
+   "sha256": "21054a2a3538981c740dd5153b7a5cc991c1a4c398e88612c881c447768852e7",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/mother.jpg",
+   "bytes": 34955,
+   "sha256": "ddbb6cdcd348cb59a8b5c344d3afd6a22b035ce8686434dfa3c0e810d0073b68",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/player_avatar.png",
+   "bytes": 3379,
+   "sha256": "99f0d2e840cc95a576fa23185fad6244e3095aa5c5e313292d66396128a01a87",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/player_avatar_custom.png",
+   "bytes": 567240,
+   "sha256": "a1eccfa60e99bf285ce87f8efba87b937bc6a61adb883f2a9becf2dc473a3f18",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/robot.jpg",
+   "bytes": 35453,
+   "sha256": "74c8859ea69863e15d5ac9fb7d8324951a534cac77a618ac3628d838cad00de6",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/sm.jpg",
+   "bytes": 34704,
+   "sha256": "19ee024059b404d07c5a40700635ed20964f8928e4049cc4048911b7e60ca0b2",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/str.jpg",
+   "bytes": 38567,
+   "sha256": "4a25c0bf62989499bafe6e7974a88b2c3400c6b2c8fc045714844e16b6b08d5c",
+   "included_as_text": false
+  },
+  {
+   "path": "assets/zub.jpg",
+   "bytes": 32923,
+   "sha256": "0e19793bbc629056ab448605ec81265380c45e97a86333bd2c54f3beb690b448",
+   "included_as_text": false
+  },
+  {
+   "path": "battle_ui.py",
+   "bytes": 5188,
+   "sha256": "035f27916e7fce03cf6256e3373a7b7c2cb6a08dc1837a2a1cb5bd175c97239e",
+   "included_as_text": true
+  },
+  {
+   "path": "COLLECT_FULL_LOCAL.bat",
+   "bytes": 302,
+   "sha256": "c5bde0ba5b0594803d37be79e70494d237f5f75119ff5185531faae62b1fd86d",
+   "included_as_text": true
+  },
+  {
+   "path": "COLLECT_PROJECT.bat",
+   "bytes": 220,
+   "sha256": "4353473b6d08417f9a025c112fcdd102613152922b27ae4ad598968a3db00da5",
+   "included_as_text": true
+  },
+  {
+   "path": "COLLECT_PROJECT.py",
+   "bytes": 9110,
+   "sha256": "d45315df00ae89a957cf89e90dc1c21c54ff21bab2d1b1cc27f5032e3c689fb0",
+   "included_as_text": true
+  },
+  {
+   "path": "COLLECT_WITH_PROGRESS.bat",
+   "bytes": 252,
+   "sha256": "aabe3211cb24ba53307f654335b498a8768e2c49831b74e0ea0569eade9a98a8",
+   "included_as_text": true
+  },
+  {
+   "path": "docs/Паспорт_проекта_v7.docx",
+   "bytes": 47191,
+   "sha256": "718a601e60b9ee7b764d09596a1762883c87ad707f08dbbc218c5dd2cb542941",
+   "included_as_text": false
+  },
+  {
+   "path": "docs/Паспорт_проекта_v7.pdf",
+   "bytes": 77541,
+   "sha256": "f2b0f236f96d05e2d0dedf8c37efeca140d5f67353ad8dd926db7892298ed00b",
+   "included_as_text": false
+  },
+  {
+   "path": "game/minigames.py",
+   "bytes": 10105,
+   "sha256": "249a151036a39c1f84e06c51f23e9fd5e550e52238accd8af426b4a5850c7706",
+   "included_as_text": true
+  },
+  {
+   "path": "game/sfx.py",
+   "bytes": 1356,
+   "sha256": "fbc6af4c35d3670f9ca1d6e77717d7ecafed68d47c75ed80e5fb7a0570c9f6d1",
+   "included_as_text": true
+  },
+  {
+   "path": "game/ui2.py",
+   "bytes": 7393,
+   "sha256": "f7ee50ca93c90f09da62d33c005289845733c7c1f6c9eac741a4ea754eb07c08",
+   "included_as_text": true
+  },
+  {
+   "path": "import_save.py",
+   "bytes": 1541,
+   "sha256": "3ac7a0126fd6ccf6c253bb80216847b461a760555908dfe98d7f4462a9c95054",
+   "included_as_text": true
+  },
+  {
+   "path": "main.py",
+   "bytes": 28007,
+   "sha256": "cde3b5ced72a1c625262c81d9f17031aba4fc97c3f46d23f1d52f4839336b27a",
+   "included_as_text": true
+  },
+  {
+   "path": "main_ui.py",
+   "bytes": 51,
+   "sha256": "50b885d1684130db9283599b972cb12ddfeb8bd5e582037c444f67d2edc34eca",
+   "included_as_text": true
+  },
+  {
+   "path": "minigames.py",
+   "bytes": 7270,
+   "sha256": "4bfa83cfb57835140e8ee6c99f2c40f4081016a55d53110b69dfa6daf5137fe3",
+   "included_as_text": true
+  },
+  {
+   "path": "NEW_CHAT_CONTEXT.md",
+   "bytes": 11862,
+   "sha256": "251c12cd34f27f3ce0daa3d4312d2ee677bd1cc137976357c1a3e83ae921e427",
+   "included_as_text": true
+  },
+  {
+   "path": "npcs.json",
+   "bytes": 4362,
+   "sha256": "c5b5fdce43131cf05f59b8dd366b8a729b09b0f31c57f4d7d5e8caf18365df65",
+   "included_as_text": true
+  },
+  {
+   "path": "requirements.txt",
+   "bytes": 11,
+   "sha256": "53233e8dfbed17a27fb6404f34b68fe2a8d00d68c743c4e6f4ac073b2833bab2",
+   "included_as_text": true
+  },
+  {
+   "path": "runtime_manager.py",
+   "bytes": 8705,
+   "sha256": "574b3c62690aa7cffa196a2eb1eedbfdd37c3410d62e4c36977bfdb7c56d3c1a",
+   "included_as_text": true
+  },
+  {
+   "path": "sound.py",
+   "bytes": 796,
+   "sha256": "15754e9503201cf22831b23a0d5bd4ca91238bee936b11a201e8d945f6bb63de",
+   "included_as_text": true
+  },
+  {
+   "path": "START.bat",
+   "bytes": 474,
+   "sha256": "dea82ecb58202b89d8fbcb9c3aa4ace501c0d8e61b8d9fb771f9a4b57e6091ae",
+   "included_as_text": true
+  },
+  {
+   "path": "START_NEW_CHAT.txt",
+   "bytes": 1956,
+   "sha256": "4ea3ac4b4ef036277048b80309f0abb2bc036cbfbebbee4b0deb150db41cb7d6",
+   "included_as_text": true
+  },
+  {
+   "path": "TEST.bat",
+   "bytes": 94,
+   "sha256": "e1dae072152416a8516500272aa09d0339885dce8310b175aecc423d6e26e2b4",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_ai.py",
+   "bytes": 2561,
+   "sha256": "9a6453989af8fe72e3f3b3ecfe936ea370cc98113e6f7569bbfe9b0302ecd4fc",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_logic.py",
+   "bytes": 9079,
+   "sha256": "c89453b6fcd15ef7df4153b93b3cd31cb0e4d8ee010e88122fddfdab47c3de3b",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_minigames.py",
+   "bytes": 1963,
+   "sha256": "5042a265dc6b7bbc938112a7d4b3ef931fa43755c0174beebfa4dfcbb2c80e44",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_runtime.py",
+   "bytes": 1500,
+   "sha256": "032f6a2ee513ac36e801c50d86c017c84ce355e3ecafd77886ed09c605588738",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_ui2_smoke.py",
+   "bytes": 1439,
+   "sha256": "9ba3d8a2c5d911a28deabd1508ca3b51d46404832b188024d2b1e508fdac3400",
+   "included_as_text": true
+  },
+  {
+   "path": "tests/test_ui_stub.py",
+   "bytes": 4485,
+   "sha256": "fe58627f230456ef37cbf7145591ad07996b4791a51a5805f48dd85a2c361e12",
+   "included_as_text": true
+  },
+  {
+   "path": "VERSION.txt",
+   "bytes": 87,
+   "sha256": "55e6ba7883370994736790e0f37294affb60b495d930580042e2e54484d1de6a",
+   "included_as_text": true
+  },
+  {
+   "path": "world.py",
+   "bytes": 17134,
+   "sha256": "0cfe452d0139dbfeea48d332a565d1e3b134cc55a56cb3061d9dc8df693dee97",
+   "included_as_text": true
+  },
+  {
+   "path": "ИНСТРУКЦИЯ.txt",
+   "bytes": 4926,
+   "sha256": "28584183508df7be0a0521a568afa9a9c334ea201d929bac04349b1873dcb55c",
+   "included_as_text": true
+  },
+  {
+   "path": "ПРОЧИТАЙТЕ.txt",
+   "bytes": 7159,
+   "sha256": "0bbbd4a3c0d63c047c832be1a576c65e9d42a52b3f5265e020b2f47483504b25",
+   "included_as_text": true
+  }
+ ],
+ "source_files": 31,
+ "include_saves": false,
+ "include_runtime_models": false
+}
