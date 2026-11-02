@@ -1,2 +1,2 @@
-Tyuryaga / AI branch / unified v7
-Default: 8B + streaming + fast mode + scene dialogue
+Tyuryaga / AI branch / v8 «Свои люди»
+Сюжет на 4 акта + каста + время/распорядок + карта зоны + всплывающие мини-игры
