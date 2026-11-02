@@ -1,2 +1,1 @@
-Tyuryaga / AI branch / unified v7
-Default: 8B + streaming + fast mode + scene dialogue
+Tyuryaga / unified v11 (v10 + fight system + minimal UI)
