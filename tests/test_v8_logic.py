@@ -186,6 +186,41 @@ class WorldTests(unittest.TestCase):
         self.assertGreater(hits, 0)
 
 
+class ExtraTests(unittest.TestCase):
+    def test_frame_success_costs_item_and_karma(self):
+        w = make(seed=3)
+        w.s["inv"]["knife"] = 1
+        res = w.decision("zub", "frame")
+        self.assertIn(res, ("ok", "fail"))
+        self.assertFalse(w.has("knife"))
+        if res == "ok":
+            self.assertLess(w.s["relations"]["zub"], 0)
+            self.assertLess(w.s["karma"]["honor"], 0)
+        else:
+            self.assertTrue(w.s["dropped"] or w.s["humiliations"] > 0)
+
+    def test_frame_needs_item(self):
+        w = make()
+        with self.assertRaises(ValueError):
+            w.decision("zub", "frame")
+
+    def test_god_talk_modes_and_limit(self):
+        w = make()
+        w.s["loc"] = LOC_INDEX["temple"]
+        w.s["karma"]["honor"] = -20
+        r = w.talk_god("confess")
+        self.assertGreater(r["clean"], 0)
+        self.assertIn("god", r)
+        w.talk_god("ask")
+        with self.assertRaises(ValueError):
+            w.talk_god("thanks")
+
+    def test_god_only_in_temple(self):
+        w = make()
+        with self.assertRaises(ValueError):
+            w.talk_god("ask")
+
+
 class DuelTests(unittest.TestCase):
     def test_duel_ends_and_boss(self):
         for seed in range(30):

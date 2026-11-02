@@ -705,6 +705,8 @@ class App:
             add('Помериться силой', 'Мини-игра: подходы', 'star', lambda: self.minigame('pushups'), '30 мин')
         if loc == 'temple':
             add('Помолиться', 'Господь всё слышит, карму чистит', 'cross', lambda: self.do_action('pray'), '20 мин')
+            add('Поговорить с Господом', 'Признание, вопрос или благодарность', 'cross',
+                self.talk_god, '15 мин')
         if loc == 'visit':
             add('Свиданка', 'Поговорить с матерью, взять передачку', 'phone',
                 lambda: self.do_action('visit'), '60 мин', not s['visit'].get('used'))
@@ -814,6 +816,30 @@ class App:
             self.story_window = self.window('Сюжет · ' + (scn.get('title') or ''), 980, 760)
             self.story_window.grab_set()
         self.render_story_window(self.story.scene())
+
+    def talk_god(self):
+        self.close_overlays()
+        w = self.window('Храм · разговор', 720, 560)
+        w.grab_set()
+        self.label(w, 'ГОСПОДЬ ВСЁ СЛЫШИТ', 16, True, color=GOLD).pack(anchor='w', padx=18, pady=(16, 4))
+        self.label(w, 'Свечи горят. Икона молчит так, что слышно собственные мысли.',
+                   10, color=MUTED).pack(anchor='w', padx=18)
+        out = self.label(w, '', 12, color=FG, wraplength=660, justify='left')
+        out.pack(anchor='w', padx=18, pady=12, fill='x')
+
+        def say(mode):
+            try:
+                r = self.world.talk_god(mode)
+            except ValueError as e:
+                return out.config(text=str(e))
+            out.config(text=r['text'] + '\n\n' + r['god'])
+            self.persist()
+            self.after_time([])
+            self.refresh()
+        for t, mode in [('Признаться в плохом', 'confess'), ('Спросить: «За что?»', 'ask'),
+                        ('Сказать спасибо', 'thanks')]:
+            self.button(w, t, lambda mode=mode: say(mode)).pack(fill='x', padx=18, pady=4)
+        self.button(w, 'Выйти из храма', w.destroy).pack(fill='x', padx=18, pady=(12, 14))
 
     def sleep(self):
         try:
@@ -1066,6 +1092,7 @@ class App:
                 messagebox.showinfo('Решение', str(e))
         for t, kind in [('Помочь · 2 сигареты', 'help'),
                         ('Украсть · +15₽, NPC заметит', 'theft'),
+                        ('Подставить вещь · заточка/телефон/чифирь', 'frame'),
                         ('Сдать охране · +25₽ и клеймо', 'betrayal')]:
             self.button(w, t, lambda kind=kind: do(lambda: self.world.decision(k, kind))).pack(fill='x', padx=16, pady=4)
         self.button(w, 'Занять 10₽ до завтра', lambda: do(lambda: self.world.borrow(k))).pack(fill='x', padx=16, pady=4)

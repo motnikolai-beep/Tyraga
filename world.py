@@ -634,6 +634,45 @@ class World:
             self.redeem("прощён в храме", amount=6)
         return clean
 
+    def talk_god(self, mode):
+        """Разговор с Господом в храме. mode: признание / вопрос / благодарность."""
+        s = self.s
+        if s["loc"] != LOC_INDEX["temple"]:
+            raise ValueError("Бог — в храме.")
+        t = s.setdefault("temple", {"day": s["day"], "prayers": 0, "grace": 0, "talks": 0})
+        t.setdefault("talks", 0)
+        if t.get("talk_day") != s["day"]:
+            t["talk_day"] = s["day"]
+            t["talks"] = 0
+        if t["talks"] >= 2:
+            raise ValueError("На сегодня хватит. Господь тоже занят.")
+        t["talks"] += 1
+        self.advance(15, "разговор с Господом")
+        if mode == "confess":
+            cleaned = 0
+            for dim in DIMS:
+                if s["karma"][dim] < 0:
+                    step = min(-s["karma"][dim], 8)
+                    s["karma"][dim] += step
+                    cleaned += step
+            line = ("Ты назвал вслух всё, что давило. Стало тише. Карма очищена на %d." % cleaned
+                    if cleaned > 0 else "Нечего было сказать. Или ты просто боишься сказать.")
+            return {"text": line, "clean": cleaned,
+                    "god": "— Я слышу не слова. Я слышу, как ты врёшь." if cleaned == 0 else
+                           "— Иди. И больше не делай так."}
+        if mode == "ask":
+            s["karma"]["empathy"] = clamp(s["karma"]["empathy"] + 1)
+            answer = self.rng.choice([
+                "— Вопрос не в том, за что тебе это. Вопрос в том, что ты с этим сделаешь.",
+                "— Я не выдаю справок. Я выдаю утро. Пользуйся.",
+                "— Ты просишь свободы, а держишь обиду. Освободи сначала её.",
+            ])
+            return {"text": "Ты спросил: «За что?» И сам понял, что вопрос глупый.",
+                    "clean": 0, "god": answer}
+        s["karma"]["honor"] = clamp(s["karma"]["honor"] + 1)
+        return {"text": "Ты сказал спасибо — за то, что жив, за то, что есть ещё день.",
+                "clean": 0, "god": "— Не благодари. Просто не подведи."}
+
     def confess_line(self):
         s = self.s
         ka = s["karma"]
@@ -766,13 +805,37 @@ class World:
             raise ValueError("NPC не рядом")
         if kind == "help" and self.inv("cig") < 2:
             raise ValueError("Нужны 2 сигареты")
-        self.advance(10, "решение")
+        loc = s["loc"]
+        if kind in ("help", "theft", "betrayal"):
+            self.advance(10, "решение")
         if kind == "help":
             self.add("cig", -2)
             delta, text = 6, "Игрок отдал %s две сигареты." % self.npcs[k]["name"]
         elif kind == "theft":
             s["rub"] += 15
             delta, text = -22, "%s поймал игрока на краже 15 рублей." % self.npcs[k]["name"]
+        elif kind == "frame":
+            if not any(self.has(i) for i in ("knife", "phone", "chifir")):
+                raise ValueError("Подставить можно только вещью: заточка, телефон или чифирь.")
+            item = next(i for i in ("phone", "knife", "chifir") if self.has(i))
+            self.take(item)
+            if self.rng.random() < 0.45 + 0.05 * s["training"]["cun"]:
+                st = s["stashes"].setdefault(str(loc), {"found": True, "items": []})
+                st["items"].append(item)
+                s["relations"][k] = clamp(s["relations"].get(k, 0) - 12)
+                s["karma"]["honor"] = clamp(s["karma"]["honor"] - 3)
+                for other in PRISONERS:
+                    if other != k:
+                        s["relations"][other] = clamp(s["relations"].get(other, 0) - 1)
+                self.event("frame", "Игрок подставил %s: в заначке нашлась %s."
+                           % (self.npcs[k]["name"], ITEMS[item]["name"].lower()), self.witnesses())
+                self.rise(3, "подстава удалась")
+                self.advance(20, "подстава")
+                return "ok"
+            self.humiliate("подстава раскрылась", strong=True)
+            self.event("frame_fail", "Подстава раскрылась. Игрока опустили.", self.witnesses(), public=True)
+            self.advance(30, "провал подставы")
+            return "fail"
         elif kind == "betrayal":
             s["rub"] += 25
             delta, text = -26, "Игрок сдал %s охране. Об этом узнали." % self.npcs[k]["name"]
@@ -894,7 +957,7 @@ class Duel:
         exhausted = s["stamina"] < cost
         s["stamina"] = max(0, s["stamina"] - cost)
         damage = int(power * 0.55) if exhausted else power
-        acc = g["accuracy"] - (0.15 if exhausted else 0)
+        acc = g["accuracy"] - (0.15 if exhausted else 0) + (0.06 if s["stamina"] > 70 else 0)
         hit = max(0.1, min(0.95, acc + (0.18 if aim == self.emove else -0.18) + (0.1 if stance == "aim" else 0)))
         enemy_block = 6 if self.guard else 2
         dmg = max(1, damage + self.rng.randint(-3, 3) - enemy_block) if self.rng.random() < hit else 0
