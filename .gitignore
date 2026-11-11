@@ -1,0 +1,10 @@
+# Результат сборки v12 (python build_v12.py) и служебные файлы
+dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+# Личные настройки и веса апскейлера не хранятся в репозитории
+.env
+tools/.models/
+boss_cards/
