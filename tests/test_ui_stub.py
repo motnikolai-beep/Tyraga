@@ -31,12 +31,15 @@ fake=types.ModuleType('tkinter')
 for n in ['Tk','Frame','Label','Button','Canvas','Text','Toplevel','LabelFrame','Radiobutton','IntVar','StringVar','BooleanVar','Scrollbar','Checkbutton','Menu','Menubutton','Scale','Entry','DoubleVar']:setattr(fake,n,Widget)
 fake.TclError=RuntimeError;fake.ttk=types.SimpleNamespace(Style=Widget,Combobox=Widget);fake.messagebox=types.SimpleNamespace(showwarning=lambda *a:None,showinfo=lambda *a:None,showerror=lambda *a:None,askyesno=lambda *a:True);sys.modules['tkinter']=fake
 import main,ai
+def env(original,b):
+ # Личный .env в репозиторий не входит: без него берём те же безопасные настройки, что и сборка.
+ src=original/'.env';(b/'.env').write_text(src.read_text(encoding='utf8') if src.is_file() else 'CHAT_FAST_MODE=true\nGOSSIP_ENABLED=true\n',encoding='utf8')
 from minigames import Mini
 class Smoke(unittest.TestCase):
  def test_scenes_bubbles_games_battle_modes(self):
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
-   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');shutil.copy(original/'.env',b/'.env');main.BASE=b
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
    try:
     app=main.App(Widget());app.new_game('normal');app.menu.hide();self.assertIsNotNone(app.map);app.toggle_map();app.map.draw();app.toggle_map()
     for loc in range(12):app.go(loc);self.assertTrue(app.hits);self.assertEqual('zub' in [k for rect,k in app.hits],loc==0);self.assertIn(app.npc,app.world.witnesses())
@@ -74,7 +77,7 @@ class Smoke(unittest.TestCase):
   from story_data import SCENES
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None),patch.object(uikit,'QuickGame',lambda app,kind,cb,parent=None:cb(True)):
-   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');shutil.copy(original/'.env',b/'.env');main.BASE=b
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
    try:
     app=main.App(Widget());app.new_game('normal');app.menu.hide();app.base=b;r=random.Random(2)
     for sid in SCENES:
@@ -94,7 +97,7 @@ class Smoke(unittest.TestCase):
   import meta,core
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
-   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');shutil.copy(original/'.env',b/'.env');main.BASE=b
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
    try:
     app=main.App(Widget());self.assertFalse(app.has_game);self.assertTrue(app.menu.visible)
     app.menu.hide();self.assertTrue(app.menu.visible)
@@ -116,7 +119,7 @@ class Smoke(unittest.TestCase):
   import uikit,core
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
-   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');shutil.copy(original/'.env',b/'.env');main.BASE=b
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
    try:
     app=main.App(Widget());app.new_game('normal');app.menu.hide();app.settings['seen_howto']=False
     self.assertFalse(app.chat_open);app.select('zub');self.assertTrue(app.chat_open);self.assertTrue(app.close_chat(True));self.assertFalse(app.chat_open);self.assertFalse(app.close_chat())
@@ -128,6 +131,11 @@ class Smoke(unittest.TestCase):
     for loc in (7,10,0,3):
      app.world.s['loc']=loc;app.refresh();app.render_cards()
     app.world.s['loc']=7;app.world.s['cig']=9;app.do_activity('exchange');self.assertIsNotNone(app.modal);app.modal.finish()
+    # Заточку заказывают там, где сборка поселила мастера (v11 — локация 7, v12 — оружейная-мастерская).
+    for loc in range(len(core.NAMES)):
+     app.world.s['loc']=loc
+     if any(a['id']=='order_shiv' for a in core.activities(app.world)):break
+    app.refresh()
     app.do_activity('order_shiv');app.modal.pick(app.modal.cur['ch'][0]);app.modal.finish();self.assertTrue(core.has(app.world,'shiv_ordered'))
     app.world.s['loc']=0;app.do_activity('scout_zub');app.modal.finish()
     core.say(app.world,'тест');app.refresh()

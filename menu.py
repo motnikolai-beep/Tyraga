@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image,ImageTk,ImageOps,ImageEnhance
+from gfx import open_rgb
 import core,meta
 BG='#090d12';PANEL='#101720';CARD='#182331';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';GREEN='#6fcf97';RED='#c45867'
 HOWTO="""УПРАВЛЕНИЕ
@@ -39,7 +40,9 @@ class Menu:
     def paint(s):
         c=s.c;w=max(300,c.winfo_width());h=max(300,c.winfo_height());br=s.a.settings.get('brightness',1.0);key=(w,h,br)
         if key not in s.cache:
-            s.cache.clear();im=ImageOps.fit(Image.open(s.a.base/'assets/loc_0.jpg').convert('RGB'),(w,h));s.cache[key]=ImageTk.PhotoImage(ImageEnhance.Brightness(im).enhance(.32*br))
+            bg=s.a.base/'assets/menu_bg.jpg'  # отдельный фон меню, если он есть в сборке; иначе камера
+            if not bg.is_file():bg=s.a.base/'assets/loc_0.jpg'
+            s.cache.clear();im=ImageOps.fit(open_rgb(bg,(w,h)),(w,h));s.cache[key]=ImageTk.PhotoImage(ImageEnhance.Brightness(im).enhance(.32*br))
         c.delete('all');c.create_image(0,0,anchor='nw',image=s.cache[key]);c.create_window(w//2,h//2,window=s.inner,anchor='center')
     def go(s,screen,**kw):
         for x in s.inner.winfo_children():x.destroy()

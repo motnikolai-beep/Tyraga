@@ -6,6 +6,11 @@ on:
       - 'build_v12.py'
       - '.github/workflows/build-v12.yml'
       - 'первая половина/**'
+      - 'art_4k/**'
+      - 'assets/**'
+      - 'tests/**'
+      - '*.py'
+      - 'npcs.json'
 permissions:
   contents: read
 jobs:
@@ -23,3 +28,9 @@ jobs:
           name: TYURYAGA-v12-FULL
           path: dist/TYURYAGA_v12_FULL.zip
           if-no-files-found: error
+      # The archive is uploaded first, so a failing test never hides the build itself.
+      - name: Tests of the sources
+        run: python -m unittest discover -s tests
+      - name: Tests of the built game
+        run: python -m unittest discover -s tests
+        working-directory: dist/Tyuryaga_v12

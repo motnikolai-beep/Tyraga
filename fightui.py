@@ -4,6 +4,9 @@ import tkinter as tk,time,math,random
 from PIL import Image,ImageTk,ImageOps,ImageEnhance
 import fight as F
 from fight import FightEngine,MOVES,PARTS,PART_NAME,W_ARENA,GROUND
+import bosscard
+from gfx import open_rgb
+from world import NAMES
 BG='#05080c';PANEL='#101720';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';RED='#c45867';GREEN='#6fcf97'
 H_ARENA=470
 VK={65:'left',68:'right',83:'crouch',37:'left',39:'right',40:'crouch',74:'jab',75:'hook',85:'lowkick',73:'highkick',76:'block',16:'block',79:'dodge',80:'roll',32:'roll',67:'smoke',81:'retreat',72:'help',27:'pause',13:'enter'}
@@ -87,9 +90,16 @@ class FightWindow:
         except Exception:pass
         s._bg();s.tick()
     def _bg(s):
+        scene=None
         try:
-            loc=s.a.world.s['loc'];im=Image.open(s.a.base/('assets/loc_%d.jpg'%loc)).convert('RGB');im=ImageOps.fit(im,(W_ARENA,H_ARENA));im=ImageEnhance.Brightness(im).enhance(.32*s.a.settings.get('brightness',1.0));s.refs['bg']=ImageTk.PhotoImage(im)
+            loc=s.a.world.s['loc'];scene=ImageOps.fit(open_rgb(s.a.base/('assets/loc_%d.jpg'%loc),(W_ARENA,H_ARENA)),(W_ARENA,H_ARENA));im=ImageEnhance.Brightness(scene).enhance(.32*s.a.settings.get('brightness',1.0));s.refs['bg']=ImageTk.PhotoImage(im)
         except Exception:s.refs['bg']=None
+        # Боссовая заставка (стоп-кадр с именем и подписью) на время вступления; у остальных — обычная надпись.
+        s.refs['intro']=None
+        try:
+            npc=s.a.npcs[s.k]
+            if npc.get('boss'):s.refs['intro']=ImageTk.PhotoImage(bosscard.render(s.a.base,npc,NAMES[npc['home']],(W_ARENA,H_ARENA),scene));s.eng.intro=max(s.eng.intro,bosscard.INTRO_SECONDS)
+        except Exception:s.refs['intro']=None
         try:
             im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[s.k]['portrait'])).convert('RGB');im=ImageOps.fit(im,(44,44),centering=(.5,.2));s.refs['pe']=ImageTk.PhotoImage(im)
         except Exception:s.refs['pe']=None
@@ -165,7 +175,9 @@ class FightWindow:
         for q in s.sparks:r=2+q['t']*6;c.create_oval(q['x']+ox-r,q['y']+oy-r,q['x']+ox+r,q['y']+oy+r,fill=q['c'],outline='')
         for q in s.texts:c.create_text(q['x']+ox,q['y']+oy,text=q['text'],fill=q['color'],font=('Segoe UI',18 if q['big'] else 12,'bold'))
         s.hud()
-        if e.phase=='intro':c.create_text(W_ARENA/2,150,text=s.name.upper()+'  против  ВАС',fill=GOLD,font=('Segoe UI',26,'bold'))
+        if e.phase=='intro':
+            if s.refs.get('intro'):c.create_image(0,0,anchor='nw',image=s.refs['intro'])
+            else:c.create_text(W_ARENA/2,150,text=s.name.upper()+'  против  ВАС',fill=GOLD,font=('Segoe UI',26,'bold'))
         elif e.banner=='БОЙ!' and e.time<.9:c.create_text(W_ARENA/2,150,text='БОЙ!',fill=GOLD,font=('Segoe UI',34,'bold'))
         if s.combo_txt[1]>0:c.create_text(W_ARENA/2,110,text=s.combo_txt[0],fill='#ffd37a',font=('Segoe UI',20,'bold'))
         if e.phase=='over':

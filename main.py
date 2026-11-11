@@ -10,6 +10,7 @@ from sound import Sound
 import ai
 import core,meta
 from menu import Menu
+from gfx import open_rgb
 from uikit import Tutorial
 from uikit import EventWindow,MapView
 from story_data import SCENES
@@ -258,7 +259,7 @@ class App:
   loc=self.world.s['loc'];key=(loc,w,h,self.cover,self.settings['brightness'])
   if key not in self.cache:
    if len(self.cache)>35:self.cache.clear()
-   im=Image.open(BASE/f'assets/loc_{loc}.jpg').convert('RGB')
+   im=open_rgb(BASE/f'assets/loc_{loc}.jpg',(w,h))
    if self.settings['brightness']!=1:im=ImageEnhance.Brightness(im).enhance(self.settings['brightness'])
    if self.cover:im=ImageOps.fit(im,(w,h),method=Image.Resampling.LANCZOS)
    else:im.thumbnail((w,h),Image.Resampling.LANCZOS);bg=Image.new('RGB',(w,h),'#070b10');bg.paste(im,((w-im.width)//2,(h-im.height)//2));im=bg

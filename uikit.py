@@ -2,6 +2,7 @@
 """Окна v8: сюжетные сцены, всплывающие мини-игры, карта зоны."""
 import tkinter as tk,random
 from PIL import Image,ImageTk,ImageOps,ImageDraw,ImageEnhance
+from gfx import open_rgb
 import core
 from story_data import SCENES
 BG='#090d12';PANEL='#101720';CARD='#182331';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';RED='#c45867';GREEN='#6fcf97'
@@ -211,7 +212,7 @@ class MapView:
     def room(s,i,rw,rh,cur):
         br=s.a.settings.get('brightness',1.0);key=('room',i,rw,rh,cur,br)
         if key not in s.cache:
-            im=ImageOps.fit(Image.open(s.a.base/('assets/loc_%d.jpg'%i)).convert('RGB'),(rw,rh),method=Image.Resampling.LANCZOS)
+            im=ImageOps.fit(open_rgb(s.a.base/('assets/loc_%d.jpg'%i),(rw*2,rh*2)),(rw,rh),method=Image.Resampling.LANCZOS)
             im=ImageEnhance.Brightness(im).enhance((1.0 if cur else .55)*br);s.cache[key]=ImageTk.PhotoImage(im)
         return s.cache[key]
     def draw(s):

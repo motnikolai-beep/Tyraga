@@ -8,6 +8,12 @@ NP=json.loads((Path(__file__).resolve().parents[1]/'npcs.json').read_text(encodi
 def mk(d='normal'):return World(NP,meta.new_state(NP,d),seed=3)
 def pick(sid,i,w,game=True,rng=None):
     return core.resolve_choice(w,SCENES[sid]['nodes']['start']['ch'][i],game_ok=game,rng=rng or random.Random(1))
+def offered(w,act):
+    # Локация, где доступно действие: в v11 заточку заказывают в мастерской, в сборке v12 — в оружейной-мастерской.
+    for loc in range(len(core.NAMES)):
+        w.s['loc']=loc
+        if act in [a['id'] for a in core.activities(w)]:return loc
+    raise AssertionError(act+' is not offered in any location')
 class V10(unittest.TestCase):
     def test_lore_reaches_ai_context(self):
         w=mk();core.apply(w,{'flag':['framed_kol','side_graf','cats_friend']});core.boss_down(w,'zub')
@@ -33,7 +39,7 @@ class V10(unittest.TestCase):
             return s
         a=seen_at(-50);self.assertIn('extort',a);self.assertNotIn('tribute',a);b=seen_at(50);self.assertIn('tribute',b);self.assertNotIn('extort',b)
     def test_exchange_order_parcel(self):
-        w=mk();w.s['loc']=7;ids=[a['id'] for a in core.activities(w)];self.assertIn('exchange',ids);self.assertIn('order_shiv',ids)
+        w=mk();w.s['loc']=7;ids=[a['id'] for a in core.activities(w)];self.assertIn('exchange',ids);offered(w,'order_shiv')
         w.s['cig']=10;pick('order_shiv',0,w);self.assertTrue(core.has(w,'shiv_ordered'));core.advance(w,49*60,quiet=True);self.assertIn('shiv_ready',[p['id'] for p in core.C(w)['pending']])
         w2=mk();core.apply(w2,{'item':{'tea':2}});pick('parcel',0,w2);core.advance(w2,31*60,quiet=True);self.assertIn('parcel_back',[p['id'] for p in core.C(w2)['pending']])
     def test_weakness_flow(self):
