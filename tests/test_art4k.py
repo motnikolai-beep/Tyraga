@@ -46,7 +46,7 @@ class Masters(unittest.TestCase):
         known = {Path(f).stem for f in B.LOCS}
         for master in (ART / 'locations').glob('*.jpg'):
             self.assertIn(master.stem, known, master.name)
-        known = {Path(v[0]).stem for v in B.NPC.values()} | {Path(f).stem for f in B.EXTRA_PORTRAITS.values()}
+        known = {Path(v[0]).stem for v in B.NPC.values()} | {Path(f).stem for f in B.EXTRA_PORTRAITS.values()} | {Path(B.HERO_ART).stem}
         for master in (ART / 'characters').glob('*.jpg'):
             self.assertIn(master.stem, known, master.name)
             with Image.open(master) as im:

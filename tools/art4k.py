@@ -153,6 +153,8 @@ def _catalog():
         boss = ' · босс' if names[npc]['boss'] else ''
         before = None if npc in b.NEW_BOSSES else ROOT / 'assets' / (b.LEGACY_PORTRAIT.get(npc, npc) + '.jpg')
         rows.append(('chr', Path(file).stem, names[npc]['name'] + boss, before))
+    # Герой игрока: не NPC, исходник — его прежний фотопортрет из assets.
+    rows.append(('chr', Path(b.HERO_ART).stem, 'Герой игрока', ROOT / 'assets' / b.HERO_SOURCE))
     return rows
 
 

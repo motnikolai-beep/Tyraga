@@ -32,6 +32,8 @@ EXTRA_PORTRAITS={'mat':'13_mat.png','zina':'14_zina.png','polkan':'15_polkan.png
 LEGACY_PORTRAIT={'mat':'mat','zina':'mat'}
 # Bosses invented for v12 ("хозяева локаций"): no source PNG and no legacy picture; npcs.json already holds their final names and roles.
 NEW_BOSSES=('polkan','hleb','kip','cenz')
+# The player's own portrait (narrator scenes, the personal file). Not an NPC, so it is listed apart from the cast.
+HERO_ART='19_hero.png';HERO_SOURCE='player_avatar_custom.png'
 # Background of the main menu: the night yard (location 1).
 MENU_BG='02_yard_night.png'
 # Borderlands-style boss intro card: one short line under the name.
