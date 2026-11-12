@@ -12,7 +12,7 @@ H_ARENA=470
 VK={65:'left',68:'right',83:'crouch',37:'left',39:'right',40:'crouch',74:'jab',75:'hook',85:'lowkick',73:'highkick',76:'block',16:'block',79:'dodge',80:'roll',32:'roll',67:'smoke',81:'retreat',72:'help',27:'pause',13:'enter'}
 SYM={'a':'left','d':'right','s':'crouch','left':'left','right':'right','down':'crouch','j':'jab','k':'hook','u':'lowkick','i':'highkick','l':'block','shift_l':'block','o':'dodge','p':'roll','space':'roll','c':'smoke','q':'retreat','h':'help','escape':'pause','return':'enter',
  'cyrillic_ef':'left','cyrillic_ve':'right','cyrillic_yeru':'crouch','cyrillic_o':'jab','cyrillic_el':'hook','cyrillic_ghe':'lowkick','cyrillic_sha':'highkick','cyrillic_de':'block','cyrillic_shcha':'dodge','cyrillic_ze':'roll','cyrillic_es':'smoke','cyrillic_shorti':'retreat','cyrillic_er':'help'}
-ENEMY_COL={'zub':'#7a3f3f','graf':'#5f4d86','gvo':'#40633f','str':'#8a9098','sm':'#3b4252','gen':'#505068','mat':'#7a523d','cook':'#b9b9b0','kol':'#5d6a50','zina':'#8a4f6a','buh':'#4d4a42','serg':'#55603f','steam':'#6a7a86','prach':'#6a5d3f'}
+ENEMY_COL={'zub':'#7a3f3f','graf':'#5f4d86','gvo':'#40633f','str':'#8a9098','sm':'#3b4252','gen':'#505068','mat':'#7a523d','cook':'#b9b9b0','kol':'#5d6a50','zina':'#8a4f6a','buh':'#4d4a42','serg':'#55603f','steam':'#6a7a86','prach':'#6a5d3f','polkan':'#5b6b3a','hleb':'#8a7f6a','kip':'#b5483c','cenz':'#3f6b55'}
 SK='#d1a883'
 def key_name(e):
     n=VK.get(getattr(e,'keycode',0))

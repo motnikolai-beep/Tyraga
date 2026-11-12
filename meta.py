@@ -96,7 +96,7 @@ ACH=[
  ('first_blood','Первая кровь','Победить в драке.',lambda w:_ev(w,'combat','Победа'),False),
  ('boss1','Свергатель','Свергнуть первого босса.',lambda w:len(core.C(w)['ousted'])>=1,False),
  ('boss3','Гроза начальства','Свергнуть трёх боссов.',lambda w:len(core.C(w)['ousted'])>=3,False),
- ('boss8','Зона без хозяев','Свергнуть всех восьмерых боссов.',lambda w:len(core.C(w)['ousted'])>=8,False),
+ ('boss8','Зона без хозяев','Свергнуть всех боссов зоны.',lambda w:len(core.C(w)['ousted'])>=len(core.BOSS_LOC),False),
  ('tier_up','Не последний человек','Стать Авторитетом.',lambda w:core.C(w)['caste']>=35,False),
  ('pahan','Слово — закон','Достичь статуса Пахана.',lambda w:core.tier(w)[0]=='Пахан',False),
  ('six','На побегушках','Опуститься до Шестёрки.',lambda w:core.C(w)['caste']<-35,False),
@@ -127,7 +127,7 @@ ACH=[
  ('end_amnesty','Чистая совесть','Концовка «Полная амнистия».',lambda w:_fl(w,'END_amnesty'),True),
  ('end_shaw','Побег из Шоушенка','Секретная концовка: ползти через трубу под грозой.',lambda w:_fl(w,'END_shaw'),True),
  ('weak1','Знай врага','Найти слабость первого босса.',lambda w:len(core.C(w)['weak'])>=1,False),
- ('weak_all','Доска слабостей','Узнать слабости всех восьмерых боссов.',lambda w:len(core.C(w)['weak'])+len(core.C(w)['ousted'])>=8,False),
+ ('weak_all','Доска слабостей','Узнать слабости всех боссов зоны.',lambda w:len(set(core.C(w)['weak'])|set(core.C(w)['ousted']))>=len(core.BOSS_LOC),False),
  ('weak_win','Мозги, а не кулаки','Свергнуть босса, используя слабость.',lambda w:any(k.startswith('weak_') and k.endswith('_used') and v for k,v in core.C(w)['flags'].items()),False),
  ('matr','Матрёшка','Пройти цепочку посылок до конца.',lambda w:_fl(w,'matr_done'),False),
  ('broker','Биржевой волк','Пять раз поторговать на бирже чая.',lambda w:_cnt(w,'exchange')>=5,False),
@@ -139,6 +139,9 @@ ACH=[
  ('parry','Идеальный блок','Парировать удар в бою.',lambda w:_cnt(w,'parry')>=1,False),
  ('combo','Комбо-мастер','Выполнить комбо в бою.',lambda w:_cnt(w,'combo')>=1,False),
  ('limb','Вывел из строя','Вывести из строя часть тела противника.',lambda w:_cnt(w,'limb_broken')>=1,False),
+ ('turf1','Без хозяина','Освободить локацию от её хозяина.',lambda w:any(b in core.C(w)['ousted'] for b in core.TURF),False),
+ ('turf_all','Ничья земля','Свергнуть всех четырёх хозяев локаций: двор, кухня, душевая и библиотека свободны.',lambda w:all(b in core.C(w)['ousted'] for b in core.TURF),False),
+ ('letters5','Пишите письма','Отправить домой пять писем.',lambda w:_cnt(w,'letter')>=5,False),
 ]
 def ach_store(base):
     try:d=json.loads((Path(base)/'achievements.json').read_text(encoding='utf8'))

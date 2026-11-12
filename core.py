@@ -153,7 +153,7 @@ def sleep(w,force=False):
     day_start=((c['abs']//1440)+(1 if c['abs']%1440>=5*60 else 0))*1440+6*60
     c['abs']=day_start;w.s['ap']=99
     if force:w.s['stamina']=int(w.s['stamina_max']*.6);w.s['hp']=max(1,w.s['hp']-8)
-    c['flags'].pop('storm_tonight',None);c['pending'].append({'t':'scene','id':'morning'});schedule_day(w)
+    c['flags'].pop('storm_tonight',None);c['flags'].pop('letter_today',None);c['pending'].append({'t':'scene','id':'morning'});schedule_day(w)
 
 def hops(a,b):
     if a==b:return 0
@@ -281,8 +281,12 @@ def activities(w):
         if b in C(w)['weak']:add('weak_'+b,'Слабое место: '+w.npcs[b]['name'],30,'star')
         else:add('scout_'+b,'Разведка: слабости '+w.npcs[b]['name'],30,'rat')
     if L==7:add('exchange','Биржа чая',20,'coin');add('order_shiv','Заказать заточку (4 сиг., 2 дня)',10,'rat','Заказ уже в работе' if has(w,'shiv_ordered') else 'Нужно 4 сигареты' if s['cig']<4 else None)
+    if L==7:add('letter','Написать письмо домой',40,'book','Сегодня письмо уже ушло' if has(w,'letter_today') else None)
     if L==10:add('parcel','Передать посылку (2 пачки чая)',15,'heart','Нужны 2 пачки чая' if C(w)['inv'].get('tea',0)<2 else 'Посылка уже в пути' if has(w,'parcel_sent') else None)
     add('bed','Лечь на шконку',0,'clock',None if night else 'Только ночью (с 22:00)')
+    for a in out:
+        b=turf_boss(w,a['id'])
+        if b:a['title']+=' · хозяин — '+w.npcs[b]['name']
     return out
 
 # ---- исполнитель сцен (без tk) ----
@@ -329,8 +333,17 @@ def scene_for(w,sid):
     if sid=='meal':return 'meal_low' if t=='Петух' else 'meal_high' if t=='Пахан' else 'meal'
     if sid=='trade':return 'trade_'+('low' if t in('Петух','Шестёрка') else 'high' if t in('Авторитет','Пахан') else 'mid')
     if sid=='exchange':return 'exchange_'+market_band(w)
+    b=turf_boss(w,sid)
+    if b:return sid+'_'+b
     return sid
-BOSS_LOC={'zub':0,'graf':5,'gvo':3,'str':6,'sm':11,'gen':10,'mat':8,'cook':9}
+BOSS_LOC={'zub':0,'graf':5,'gvo':3,'str':6,'sm':11,'gen':10,'mat':8,'cook':9,'polkan':1,'hleb':2,'kip':4,'cenz':7}
+# v12 «Хозяева локаций»: пока босс у власти, одно местное занятие идёт по его правилам (сцена «<занятие>_<босс>»).
+# босс -> (локация, занятие, как это называется в журнале)
+TURF={'polkan':(1,'smoke_break','перекур'),'hleb':(2,'work_shift','смена'),'kip':(4,'wash','горячая вода'),'cenz':(7,'letter','письма')}
+def turf_boss(w,act,loc=None):
+    """Босс, по чьим правилам сейчас идёт занятие act в локации (None — занятие свободно)."""
+    L=w.s['loc'] if loc is None else loc;out=C(w)['ousted']
+    return next((b for b,(l,a,_) in TURF.items() if l==L and a==act and b not in out),None)
 def weak_known(w,k):return k in C(w)['weak']
 def boss_here(w):
     c=C(w);return next((b for b,l in BOSS_LOC.items() if l==w.s['loc'] and b not in c['ousted']),None)
@@ -355,6 +368,8 @@ def journal(w):
     out.append(('Долги',d or ['Долгов нет.']))
     wk=[('✔ %s: слабость известна — «Слабое место» в %s'%(w.npcs[b]['name'],NAMES[BOSS_LOC[b]])) if b in c['weak'] else ('? %s (%s): слабость неизвестна, нужна разведка'%(w.npcs[b]['name'],NAMES[BOSS_LOC[b]])) for b in BOSS_LOC if b not in c['ousted']]
     out.append(('Доска слабостей боссов',wk or ['Все боссы повержены.']))
+    tf=[('✔ %s: %s — свободно, %s больше не хозяин'%(NAMES[l],what,w.npcs[b]['name'])) if b in c['ousted'] else ('✘ %s: %s — по правилам хозяина (%s)'%(NAMES[l],what,w.npcs[b]['name'])) for b,(l,a,what) in TURF.items() if b in w.npcs]
+    out.append(('Хозяева локаций',tf))
     f=c['flags'];pl=[]
     for k,t in [('esc_key','ключ от подвала'),('shaw_hammer','геологический молоточек'),('shaw_poster','плакат'),('shaw_ledger','копия чёрной бухгалтерии')]:
         pl.append(('✔ ' if (f.get(k) or (k=='esc_key' and c['inv'].get('key'))) else '✘ ')+t)

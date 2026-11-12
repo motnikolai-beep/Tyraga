@@ -54,14 +54,36 @@ class Masters(unittest.TestCase):
                 self.assertGreaterEqual(im.width, 2400, master.name)
 
     def test_every_boss_has_art_of_their_own(self):
-        """8 боссов — 8 разных картинок (стилизованный мастер или, пока он в очереди, исходный PNG)."""
-        self.assertEqual(len(BOSSES), 8)
+        """12 боссов — 12 разных картинок. У четырёх новых исходного PNG не было: им обязателен 4K-мастер."""
+        self.assertEqual(len(BOSSES), 12)
         pictures = {}
         for boss, file in BOSS_ART.items():
-            source, _stylised = B.art_source(ROOT, 'characters', file)
+            source, stylised = B.art_source(ROOT, 'characters', file)
             self.assertTrue(source.is_file(), 'у босса %s нет своей картинки: %s' % (boss, file))
+            if boss in B.NEW_BOSSES:
+                self.assertTrue(stylised, 'новому боссу %s нужен мастер в art_4k/characters' % boss)
             pictures[boss] = digest(source)
-        self.assertEqual(len(set(pictures.values())), 8)
+        self.assertEqual(len(set(pictures.values())), 12)
+
+    def test_one_boss_per_location(self):
+        """У каждой из 12 локаций ровно один босс, и сборка знает название его места."""
+        homes = sorted(NPCS[boss]['home'] for boss in BOSSES)
+        self.assertEqual(homes, list(range(12)))
+        self.assertEqual({NPCS[b]['home'] for b in B.NEW_BOSSES}, {1, 2, 4, 7})
+        self.assertEqual([B.LOC_NAMES[NPCS[b]['home']] for b in B.NEW_BOSSES], ['Двор', 'Кухня', 'Душевая', 'Библиотека'])
+
+    def test_new_bosses_have_game_portraits_made_from_their_masters(self):
+        """assets/<id>.jpg нового босса — тот же кадр, что и его 4K-мастер (игра из корня репозитория берёт его оттуда)."""
+        import gfx
+        for boss in B.NEW_BOSSES:
+            portrait = ROOT / 'assets' / (boss + '.jpg')
+            self.assertTrue(portrait.is_file(), boss)
+            with Image.open(portrait) as im:
+                self.assertEqual(im.size, B.PORTRAIT, boss)
+            with tempfile.TemporaryDirectory() as td:
+                fresh = Path(td) / 'p.jpg'
+                B.save_portrait(B.art_source(ROOT, 'characters', B.EXTRA_PORTRAITS[boss])[0], fresh)
+                self.assertTrue(gfx.lookalikes([portrait, fresh]), 'assets/%s.jpg отстал от мастера: пересоздайте его' % boss)
 
     def test_no_two_masters_show_the_same_picture(self):
         import gfx
@@ -112,6 +134,29 @@ class BuildRules(unittest.TestCase):
         for leftover in ('Генерал', 'Бухгалтер', 'робот', 'Страж-9', 'Курсант расцвёл', 'Курсант нашёл', 'Курсант забыл ',
                          'Курсант удовлетворён', 'Бумажкина доволен', 'Бумажкина выписал ', 'Бумажкина закрыл '):
             self.assertFalse(leftover in adapted, leftover)
+
+    def test_chains_speaks_like_a_man_not_a_machine(self):
+        """Цепи — человек: в текстах v12 у него не остаётся машинного голоса из сплошных заглавных букв."""
+        import re
+        adapted = ''.join(B.transform_source((ROOT / name).read_text(encoding='utf8'))
+                          for name in ('story_data.py', 'story10.py', 'story12.py', 'lore.py'))
+        shouted = [line for line in re.findall('«([^«»]{12,})»', adapted)
+                   if sum(c.isalpha() for c in line) >= 10 and line == line.upper()]
+        # Заглавными остаются только названия концовок — это заголовки, а не чья-то речь.
+        self.assertEqual(sorted(shouted), ['КОШАЧЬЯ РЕВОЛЮЦИЯ', 'ПОБЕГ ИЗ ШОУШЕНКА', 'ПОЛНАЯ АМНИСТИЯ'])
+        self.assertIn('«Пропуск в оружейную покажи.', adapted)
+        self.assertIn('Цепи одобряет. Вы в журнале.', adapted)
+        self.assertNotIn('НОСКОМ', adapted)
+
+    def test_new_chapter_survives_the_text_adaptation(self):
+        """Тексты новых боссов написаны сразу для v12: словарь замен сборки не должен в них ничего менять."""
+        source = (ROOT / 'story12.py').read_text(encoding='utf8')
+        renamed = sorted({word for word in B.PAT.findall(source) if B.REPLACE[word] != word})
+        self.assertEqual(renamed, [], 'в story12.py попали слова, которые сборка переименует')
+        self.assertEqual(B.transform_source(source), source)
+        for boss in B.NEW_BOSSES:
+            for field in ('name', 'role', 'goal'):
+                self.assertEqual(B.text(NPCS[boss][field]), NPCS[boss][field], (boss, field))
 
     def test_texts_follow_the_locations(self):
         """Названия мест стоят в верном падеже, ремесло — в оружейной-мастерской, а не в библиотеке."""

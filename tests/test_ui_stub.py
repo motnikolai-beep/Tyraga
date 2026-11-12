@@ -37,6 +37,7 @@ def env(original,b):
 from minigames import Mini
 class Smoke(unittest.TestCase):
  def test_scenes_bubbles_games_battle_modes(self):
+  import core
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
    b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
@@ -66,6 +67,9 @@ class Smoke(unittest.TestCase):
      if bw.eng.phase=='over':break
     bw.paused=True;bw.tick(1/30);bw.paused=False
     bw.close();self.assertIsNone(app.battle);self.assertIn(bw.eng.result,('Победа','Поражение','Ничья','Отступление'))
+    # Исход боя случаен. Если бот победил босса, тот «свергнут» и уходит из камеры — тогда ссоре в чате не с кем начаться.
+    # Возвращаем его на место, чтобы проверка чата не зависела от того, кто выиграл.
+    core.C(app.world).update(ousted=[],pending=[]);app.refresh();app.select('zub');app.close_chat(True)
     app.world.s['npc_health']={};text='щас порежу тебя';meta={'npc':'zub','text':text,'private':False};o=ai.zero();o.update(reply='Ну попробуй.',_combat_intent={'speaker':'player','target':'npc','evidence':text})
     app.job={'id':'test','kind':'chat','meta':meta};app.liveq.put(('old','zub','wrong'));app.liveq.put(('test','zub','Частичный'));app.q.put(('test',o,None));app.poll();self.assertIsNotNone(app.battle);self.assertTrue(app.bubble_hits);app.battle_window.close();app.chat_combat(meta,o);self.assertIsNone(app.battle)
     self.assertIn('Ну попробуй',app.world.s['history']['zub'][-1]['content']);app.show_history();app.reset_chat();self.assertEqual(app.world.s['history']['zub'],[])

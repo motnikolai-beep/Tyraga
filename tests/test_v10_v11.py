@@ -110,7 +110,7 @@ class V11Fight(unittest.TestCase):
         for _ in range(70):e.update(1/60);e.think=99
         self.assertGreater(e.p.stam,40);self.assertEqual(e.cigs,2);e.finish();self.assertEqual(w.s['cig'],2)
     def test_boss_styles_and_weak_boost(self):
-        self.assertEqual(set(fight.STYLES),{'zub','graf','gvo','str','sm','gen','mat','cook'})
+        self.assertEqual(set(fight.STYLES),set(core.BOSS_LOC));self.assertEqual(len(fight.STYLES),12)
         self.assertGreater(fight.STYLES['str']['hp'],fight.STYLES['graf']['hp']);self.assertGreater(fight.STYLES['graf']['dodge'],fight.STYLES['zub']['dodge'])
         def dealt(weak):
             tot=0

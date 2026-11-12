@@ -2,7 +2,7 @@ import json,uuid,random,os,hashlib,re
 from pathlib import Path
 import core,lore
 NAMES=['Камера','Двор','Столовая','Коридор','Баня','Барак','Прачечная','Мастерская','Храм','ШИЗО','Клуб','Подвалы']
-DIMS=('empathy','honor','cunning');PRISONERS={'zub','graf','buh','sm','kol','prach','steam','cook','zina'}
+DIMS=('empathy','honor','cunning');PRISONERS={'zub','graf','buh','sm','kol','prach','steam','cook','zina','hleb','kip'}
 def fresh(npcs):
  return {'core':core.default(),'version':7,'day':1,'turn':0,'ap':6,'food':80,'hp':100,'stamina':100,'stamina_max':100,'rub':20,'cig':15,'loc':0,'companion':'zub','karma':dict.fromkeys(DIMS,0),'budget':dict.fromkeys(DIMS,0),'relations':{},'history':{},'memory':{},'seen':[],'events':[],'knowledge':{},'gossip':[],'audit':[],'diary':[],'notices':[],'npc_state':{k:{'loc':v['home'],'last_turn':-9,'last_topic':'','discussed_gossip':[]} for k,v in npcs.items()},'day_interruptions':0,'obligations':[],'gear':{'weapon':'Кулаки','damage':16,'armor':2,'accuracy':.72},'npc_health':{},'dig':0,'mice':0,'chron':[],'defeated':[],'chat_fight_tokens':[],'street_rep':{'earned':0,'processed_events':[],'rewarded_victories':[],'daily':{},'audit':[]},'dialogue_money':{'day':1,'earned':0,'npcs':{},'seen':[],'audit':[]}}
 def save(s,path):

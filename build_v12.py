@@ -28,8 +28,10 @@ LOC_NAMES=['Камера','Двор','Кухня','Коридор','Душева
 # Stylised 4K masters live in art_4k/<kind>/<source name>.jpg and replace the source PNG when present.
 ART4K='art_4k';LOC_4K=(3840,2160);LOC_HD=(2560,1440);PORTRAIT=(800,1264)
 # Heroes without a source PNG: their own portrait is used as soon as its 4K master exists.
-EXTRA_PORTRAITS={'mat':'13_mat.png','zina':'14_zina.png'}
+EXTRA_PORTRAITS={'mat':'13_mat.png','zina':'14_zina.png','polkan':'15_polkan.png','hleb':'16_hleborez.png','kip':'17_kipyatok.png','cenz':'18_tsenzor.png'}
 LEGACY_PORTRAIT={'mat':'mat','zina':'mat'}
+# Bosses invented for v12 ("хозяева локаций"): no source PNG and no legacy picture; npcs.json already holds their final names and roles.
+NEW_BOSSES=('polkan','hleb','kip','cenz')
 # Background of the main menu: the night yard (location 1).
 MENU_BG='02_yard_night.png'
 # Borderlands-style boss intro card: one short line under the name.
@@ -41,7 +43,11 @@ TAGLINES={
 'sm':'Знает все ходы. Особенно подземные.',
 'gen':'Первая проверка. Последние нервы.',
 'mat':'Семь кошек. Ноль пощады.',
-'cook':'Таблетка от всего. Шприц — от остального.'}
+'cook':'Таблетка от всего. Шприц — от остального.',
+'polkan':'Лает сам. Пёс — для солидности.',
+'hleb':'Обвешивает честно: всех одинаково.',
+'kip':'Горячая — по блату. Холодная — всем.',
+'cenz':'Прочёл всё. Вычеркнул главное.'}
 # Internal NPC ids, scene ids and save flags deliberately remain unchanged.
 REPLACE={
 'Подземный Смотритель':'Тень','Подземного Смотрителя':'Тени','Подземному Смотрителю':'Тени',
@@ -87,6 +93,15 @@ REPLACE={
 # Grammar and leftovers of the old cast: the storekeeper is a man now, the place is the armory.
 'Уговорить Бухгалтера':'Уговорить Бумажкину','ПРОПУСК В ПРАЧЕЧНУЮ':'ПРОПУСК В ОРУЖЕЙНУЮ','Страж-9 скрипит':'Цепи цедит','Страж-9 обрабатывает':'Цепи прикидывает',
 'завис, пошёл дымом и перешёл в режим энергосбережения':'растерялся, запросил письменное разъяснение и оставил пост',
+# Цепи is a man in gold chains, not a robot: his lines lose the machine voice (ALL CAPS, percentages, "the system").
+'«ПРЕДЪЯВИТЕ ПРОПУСК В ПРАЧЕЧНУЮ. ЕСЛИ ПРОПУСКА НЕТ — ПРЕДЪЯВИТЕ БУМАГУ ОБ ОТСУТСТВИИ ПРОПУСКА. ЕСЛИ И ЕЁ НЕТ — ЗАПОЛНИТЕ БЛАНК»':'«Пропуск в оружейную покажи. Нет пропуска — неси бумагу, что пропуска нет. Нет и бумаги — садись, пиши бланк»',
+'«ВЕРОЯТНОСТЬ ВАШЕЙ ВИНОВНОСТИ СНИЖЕНА НА 12%»':'«Ладно. На жулика ты теперь похож процентов на двенадцать меньше»',
+'«ПОПЫТКА ОБМАНА ЗАФИКСИРОВАНА»':'«Лапшу мне на цепи не вешай. Записал»',
+'«ПУНКТ 14.3: ЛИЦАМ С ПРОПАВШИМ НОСКОМ ПРОПУСК НЕ ТРЕБУЕТСЯ»':'«Пункт 14.3: кто ищет пропавший болт, тому без пропуска». Цепи морщится: сам писал',
+'Страж-9 одобряет. Вы в системе.':'Цепи одобряет. Вы в журнале.',
+'«ЭТО НЕ МОЁ»':'«Это не моё»',
+'Страж-9 монотонно считает: «ЗАПРЕЩЁННЫЕ ПРЕДМЕТЫ. ПОДГОТОВЬТЕСЬ К ИЗЪЯТИЮ»':'Цепи лениво перечисляет: «Запрещённое — на стол. Изымать буду по списку»',
+'«ИНЦИДЕНТ ИСЧЕРПАН»':'«Вопрос закрыт»',
 'бухгалтерия':'бухгалтерия', 'Тюряга · Свои люди v9':'Тюряга · Новые лица v12','Свои люди · v9':'Новые лица · v12'}
 PAT=re.compile('|'.join(re.escape(k) for k in sorted(REPLACE,key=len,reverse=True)))
 def text(s):return PAT.sub(lambda m:REPLACE[m.group()],s)
@@ -149,7 +164,7 @@ def build(root=ROOT):
         if art_source(root,'characters',file)[1]:hero(k,file)
         else:
             # No art of their own yet: keep the legacy picture, but as a separate file per hero.
-            legacy=root/'assets'/(LEGACY_PORTRAIT[k]+'.jpg')
+            legacy=root/'assets'/(LEGACY_PORTRAIT.get(k,k)+'.jpg')
             if data[k]['portrait']!=k:shutil.copy2(legacy,dest/'assets'/(k+'.jpg'));data[k]['portrait']=k
             report.append({'id':k,'name':data[k]['name'],'kind':'character','boss':data[k]['boss'],'home':data[k]['home'],'location':LOC_NAMES[data[k]['home']],'file':'assets/%s.jpg'%k,'style':'legacy'})
     for k,line in TAGLINES.items():data[k]['tagline']=line
@@ -194,14 +209,22 @@ def build(root=ROOT):
     (dest/'CHANGELOG_v12.md').write_text('# v12 — Новые лица\n'
         'Портреты и фоны подключены ко всем существующим загрузчикам, включая карту, диалоги и арены. Внутренние ID сохранены.\n\n'
         '## Арт «Borderlands × реальность»\n'
-        'Стилизованных 4K-фонов: %d из 12 (assets/loc_N.jpg, 3840×2160). Стилизованных портретов: %d из 14 (полные версии — image/characters/, игровые 800×1264 — assets/).\n'
-        'Это перерисовка исходных картинок с нейросетевым увеличением до 4K, а не нативный 4K-рендер. '%(done('location'),done('character'))
+        'Стилизованных 4K-фонов: %d из 12 (assets/loc_N.jpg, 3840×2160). Стилизованных портретов: %d из %d (полные версии — image/characters/, игровые 800×1264 — assets/).\n'
+        'Это перерисовка исходных картинок с нейросетевым увеличением до 4K, а не нативный 4K-рендер. '%(done('location'),done('character'),len(data))
         +('Ещё в исходном или старом виде: '+', '.join(waiting)+'.\n' if waiting else 'Весь набор стилизован.\n')
         +'У каждого героя свой файл портрета; стилизованные портреты боссов нарисованы на фоне их локаций. Фон меню — ночной двор (assets/menu_bg.jpg). Перед боем с боссом показывается заставка с именем и подписью (bosscard.py).\n\n'
         '## Герои и тексты\n'
         'Новые роли: Решёткин, Байкал, Шкет, Анальгин, Цепи, Бумажкина, Кулибин, Бачок, Тень, Турник, Сократ, Курсант. '
         'Роли Цепей (каптёрщик в золотых цепях), Курсанта (стажёрка-инспектор) и Анальгина (самозваный лекарь изолятора) приведены в соответствие с тем, что нарисовано на картинках; реплики про Курсанта и Бумажкину согласованы в женском роде.\n'
         'Промпты получают новые имена и роли, сюжетные строки адаптированы, ремонт перенесён в оружейную-мастерскую. В старых сохранениях исторические записи не переписываются. Рекомендуется новая игра; перед переносом saves сделайте копию.\n\n'
+        '## Двенадцать боссов: хозяева локаций\n'
+        'Боссов теперь 12 — по одному на каждую локацию. Четверо новых придуманы для v12, исходных картинок у них не было: '
+        'Полкан (двор), Хлеборез (кухня), Кипяток (душевая), Цензор (библиотека). У каждого свой портрет, заставка перед боем, стиль боя и слабость.\n'
+        'Пока хозяин у власти, одно местное занятие идёт по его правилам: перекур по свистку, смена на кухне через «долю», горячая вода за сигарету, письма домой через маркер. '
+        'После свержения (боем или слабостью) занятие становится обычным, а местный житель рассказывает, как стало без хозяина. '
+        'Новое занятие в библиотеке — «Написать письмо домой» (раз в день; ответ приходит примерно через 30 часов, иногда с бандеролью). '
+        'В журнале появился раздел «Хозяева локаций», добавлены три достижения. Реплики Цепей больше не написаны «машинными» заглавными буквами.\n'
+        'Тексты и баланс новых сцен и боёв — первая редакция: проверены автотестами, живым игроком не пройдены.\n\n'
         'Ограничения: автоматическая текстовая адаптация не заменяет редактуру каждого диалога; Windows, окно Tk, визуальное кадрирование и локальная модель требуют живой проверки.\n',encoding='utf8')
     validate(dest)
     zpath=root/'dist'/'TYURYAGA_v12_FULL.zip'
@@ -216,7 +239,7 @@ def build(root=ROOT):
 def validate(dest):
     for p in list(dest.glob('*.py'))+list((dest/'tests').glob('*.py')):ast.parse(p.read_text(encoding='utf8'))
     n=json.loads((dest/'npcs.json').read_text(encoding='utf8'))
-    assert len(n)==14 and len(NPC)==12
+    assert len(n)==18 and len(NPC)==12 and set(NEW_BOSSES)<=set(n)
     for k,v in n.items():
         assert 0<=v['home']<12
         assert all(c in n for c in v['contacts'])
@@ -232,7 +255,8 @@ def validate(dest):
     twins=gfx.lookalikes([dest/'assets'/(k+'.jpg') for k in faces])
     assert not twins,'heroes share one picture: '+', '.join('%s=%s'%(a.stem,b.stem) for a,b,_ in twins)
     bosses=[k for k,v in n.items() if v['boss']]
-    assert len(bosses)==8 and all(n[k].get('tagline') for k in bosses),'eight bosses, each with an intro tagline'
+    assert len(bosses)==12 and all(n[k].get('tagline') for k in bosses),'twelve bosses, each with an intro tagline'
+    assert sorted(n[k]['home'] for k in bosses)==list(range(12)),'one boss per location'
     for k in faces:
         with Image.open(dest/'assets'/(k+'.jpg')) as im:assert im.size==PORTRAIT,(k,im.size)
     # Twelve different backgrounds, 16:9, 4K when stylised; names match the art.
@@ -244,7 +268,9 @@ def validate(dest):
     twins=gfx.lookalikes([dest/'assets'/('loc_%d.jpg'%i) for i in range(12)])
     assert not twins,'locations share one picture: '+', '.join('%s=%s'%(a.stem,b.stem) for a,b,_ in twins)
     assert (dest/'assets'/'menu_bg.jpg').is_file()
-    code="import json,core,world;from story_data import SCENES;n=json.load(open('npcs.json',encoding='utf8'));w=world.World(n);assert n['gvo']['name']=='Решёткин';assert n['str']['name']=='Цепи';assert world.NAMES==%r,world.NAMES;assert len(SCENES)>=90;assert 'сюжет' in __import__('ai').PROMPT;print('v12 structural smoke test OK')"%(LOC_NAMES,)
+    code="import json,core,world;from story_data import SCENES;n=json.load(open('npcs.json',encoding='utf8'));w=world.World(n);assert n['gvo']['name']=='Решёткин';assert n['str']['name']=='Цепи';assert world.NAMES==%r,world.NAMES;assert len(SCENES)>=110;assert 'сюжет' in __import__('ai').PROMPT;"%(LOC_NAMES,)
+    # Twelve bosses are known to every system that lists them, each sits in their own location, and every turf rule has both scenes.
+    code+="import fight,story10;bosses={k for k,v in n.items() if v['boss']};assert bosses==set(core.BOSS_LOC)==set(fight.STYLES)==set(story10.WEAK),bosses;assert all(n[k]['home']==l for k,l in core.BOSS_LOC.items());assert all(a in SCENES and a+'_'+b in SCENES and n[b]['home']==l for b,(l,a,_) in core.TURF.items());print('v12 structural smoke test OK')"
     subprocess.run([sys.executable,'-c',code],cwd=dest,check=True)
 
 if __name__=='__main__':build()

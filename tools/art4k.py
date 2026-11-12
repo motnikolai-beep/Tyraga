@@ -136,7 +136,10 @@ def _font(size: int):
 
 
 def _catalog():
-    """(тип, имя файла, подпись, путь к исходнику) — по данным build_v12.py."""
+    """(тип, имя файла, подпись, путь к исходнику или None) — по данным build_v12.py.
+
+    None вместо исходника — у героев, придуманных для v12: «было» у них нет.
+    """
     sys.path.insert(0, str(ROOT))
     import build_v12 as b
     names = json.loads((ROOT / 'npcs.json').read_text(encoding='utf8'))
@@ -148,17 +151,24 @@ def _catalog():
         rows.append(('chr', Path(file).stem, name + boss, ORIGINALS / file))
     for npc, file in b.EXTRA_PORTRAITS.items():
         boss = ' · босс' if names[npc]['boss'] else ''
-        rows.append(('chr', Path(file).stem, names[npc]['name'] + boss, ROOT / 'assets' / (b.LEGACY_PORTRAIT.get(npc, npc) + '.jpg')))
+        before = None if npc in b.NEW_BOSSES else ROOT / 'assets' / (b.LEGACY_PORTRAIT.get(npc, npc) + '.jpg')
+        rows.append(('chr', Path(file).stem, names[npc]['name'] + boss, before))
     return rows
 
 
-def _pair(before: Path, after: Path | None, cell, label: str, font):
-    """Плитка «было -> стало» с подписью."""
+def _pair(before: Path | None, after: Path | None, cell, label: str, font):
+    """Плитка «было -> стало» с подписью. Без исходника слева стоит пометка «новый герой»."""
     gap, bar = 6, 30
     tile = Image.new('RGB', (cell[0] * 2 + gap, cell[1] + bar), '#0d131b')
     draw = ImageDraw.Draw(tile)
-    left = ImageOps.fit(Image.open(before).convert('RGB'), cell, method=Image.Resampling.LANCZOS, centering=(.5, .3))
-    tile.paste(left, (0, bar))
+    if before is not None:
+        left = ImageOps.fit(Image.open(before).convert('RGB'), cell, method=Image.Resampling.LANCZOS, centering=(.5, .3))
+        tile.paste(left, (0, bar))
+    else:
+        draw.rectangle((0, bar, cell[0] - 1, cell[1] + bar - 1), fill='#161d27', outline='#2b3c50')
+        if font:
+            draw.text((cell[0] // 2, bar + cell[1] // 2 - 14), 'новый герой', fill='#e6b450', font=font, anchor='mm')
+            draw.text((cell[0] // 2, bar + cell[1] // 2 + 14), 'исходника не было', fill='#8fa3b8', font=font, anchor='mm')
     if after and after.is_file():
         with Image.open(after) as im:
             im.draft('RGB', (cell[0] * 2, cell[1] * 2))
@@ -210,7 +220,7 @@ def _cast_sheet(game: Path, out: Path):
     rows = [r for r in json.loads((game / 'ART_MANIFEST_v12.json').read_text(encoding='utf8')) if r['kind'] == 'character']
     rows.sort(key=lambda r: not r['boss'])
     styles = {'borderlands_4k': 'новый стиль', 'original': 'оригинал', 'legacy': 'старая картинка'}
-    cell, bar, gap, columns = (250, 395), 56, 10, 8
+    cell, bar, gap, columns = (250, 395), 56, 10, 6  # 12 боссов — два полных ряда, остальные герои — третий
     lines = (len(rows) + columns - 1) // columns
     sheet = Image.new('RGB', (columns * (cell[0] + gap) + gap, lines * (cell[1] + bar + gap) + gap), '#0b1016')
     draw = ImageDraw.Draw(sheet)

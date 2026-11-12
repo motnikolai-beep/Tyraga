@@ -329,6 +329,7 @@ def _ok(w,tr):
     if 'caste_min' in tr and c['caste']<tr['caste_min']:return False
     if 'caste_max' in tr and c['caste']>tr['caste_max']:return False
     if 'alive' in tr and tr['alive'] in c['ousted']:return False
+    if 'ousted' in tr and tr['ousted'] not in c['ousted']:return False
     if 'flags_all' in tr and not all(c['flags'].get(f) for f in tr['flags_all']):return False
     if 'noflags' in tr and any(c['flags'].get(f) for f in tr['noflags']):return False
     if 'rel' in tr and any(s['relations'].get(k,0)<v for k,v in tr['rel'].items()):return False

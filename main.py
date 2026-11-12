@@ -306,7 +306,10 @@ class App:
   self.hud.config(text=f"♥ {s['hp']}   ⚡ {s['stamina']}   ● {s['cig']}   ₽ {s['rub']}   ·   {t}")
   self.clock.config(text=f"День {s['day']} · {core.hhmm(self.world)} {core.phase(self.world)}")
   self.title.config(text=NAMES[s['loc']]);self.hint.config(text='Местные: '+(', '.join(self.npcs[k]['name'] for k in self.world.witnesses()) or 'никого'))
-  if not self.npc or self.npc not in self.world.witnesses():self.select_default()
+  present=self.world.witnesses()
+  if not self.npc or self.npc not in present:self.select_default()
+  # Свергнутый босс уходит из локации, даже если выбран был его сосед: список собеседников не должен помнить ушедшего.
+  elif self.local_ids!=present:self.local_ids=present;self.npcbox.config(values=[self.npcs[k]['name'] for k in present]);self.npcbox.current(present.index(self.npc))
   if self.npc:self.who.config(text=self.npcs[self.npc]['name']);self.relation.config(text=f"Отношение {s['relations'].get(self.npc,0):+d}")
   else:self.who.config(text='—');self.relation.config(text='')
   self.modebutton.config(text='Быстро · 1 запрос' if self.engine.cfg['CHAT_FAST_MODE'].lower()=='true' else 'Полный режим');self.draw();self.render_notices();self.render_cards()
