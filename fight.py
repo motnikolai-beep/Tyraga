@@ -28,7 +28,7 @@ STYLES={
  # v12, хозяева локаций. Полкан — тяжёлый служака в ватнике; Хлеборез — медленный, бьёт редко и больно, закрывается;
  # Кипяток — голый напор: быстрые серии, много здоровья, никакой защиты; Цензор — уходит от ударов и держит дистанцию.
  'polkan':dict(aggr=.58,heavy=.5,block=.4,dodge=.05,roll=0,pref=88,think=.2,speed=.9,hp=1.3,power=1.1,armor=3,kite=0),
- 'hleb':dict(aggr=.4,heavy=.7,block=.55,dodge=.05,roll=0,pref=82,think=.26,speed=.78,hp=1.35,power=1.25,armor=2,kite=0),
+ 'hleb':dict(aggr=.4,heavy=.6,block=.45,dodge=.05,roll=0,pref=82,think=.26,speed=.78,hp=1.2,power=1.1,armor=1,kite=0),
  'kip':dict(aggr=.7,heavy=.15,block=.15,dodge=.2,roll=.1,pref=90,think=.12,speed=1.2,hp=1.45,power=.95,armor=0,kite=.1),
  'cenz':dict(aggr=.55,heavy=.2,block=.3,dodge=.45,roll=.2,pref=100,think=.13,speed=1.15,hp=1.15,power=1.1,armor=0,kite=.45),
 }

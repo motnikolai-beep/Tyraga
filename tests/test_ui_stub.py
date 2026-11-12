@@ -146,4 +146,42 @@ class Smoke(unittest.TestCase):
     app.menu.show();app.menu.go('settings',tab='snd');app.menu.vars['music'].set(.2);app.menu.apply_settings();self.assertAlmostEqual(app.settings['music'],.2)
     core.C(app.world)['ending']='shaw';app.show_stats();app.menu.go('stats');app.menu.go('main')
    finally:main.BASE=original
+class MastersOfPlaces(unittest.TestCase):
+ """v12: четыре новых босса на экране локации и в занятиях (Tk заменён заглушкой, окно не рисуется)."""
+ def app(self,td,original):
+  b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
+  app=main.App(Widget());app.new_game('normal');app.menu.hide();app.base=b;return app
+ def test_new_bosses_on_screen_and_in_activities(self):
+  import core
+  original=main.BASE
+  with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
+   try:
+    app=self.app(td,original)
+    for k,(loc,act,_what) in core.TURF.items():
+     # На экране локации двое: жилец и хозяин; хозяина можно выбрать и заговорить с ним.
+     app.world.s['loc']=loc;app.refresh();faces=[x for rect,x in app.hits]
+     self.assertIn(k,faces);self.assertEqual(len(faces),2);app.select(k);self.assertEqual(app.npc,k);app.close_chat(True)
+     # Занятие открывает сцену «по правилам хозяина», и говорит в ней он сам.
+     app.world.s['cig']=9;app.world.s['stamina']=90;app.render_cards();app.do_activity(act)
+     self.assertIsNotNone(app.modal,k);self.assertEqual(app.modal.sid,act+'_'+k);self.assertEqual(app.modal.cur['who'],k)
+     app.modal.pick(app.modal.cur['ch'][1]);app.modal.finish();self.assertIsNone(app.modal)
+    # Письмо — раз в день: вторая попытка не открывает сцену, а объясняет почему.
+    app.world.s['loc']=7;app.refresh();self.assertTrue(core.has(app.world,'letter_today'));app.do_activity('letter')
+    self.assertIsNone(app.modal);self.assertIn('письмо',app.status.l.cget('text'))
+    # Когда хозяин свергнут, то же занятие открывает обычную сцену.
+    core.boss_down(app.world,'kip');core.C(app.world)['pending'].clear();app.world.s['loc']=4;app.refresh();app.do_activity('wash')
+    self.assertEqual(app.modal.sid,'wash');app.modal.finish()
+   finally:main.BASE=original
+ def test_ousted_boss_leaves_the_talk_list(self):
+  import core
+  original=main.BASE
+  with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
+   try:
+    app=self.app(td,original)
+    # Выбран сосед босса. Босса свергают слабостью — в списке собеседников остаётся только сосед.
+    app.world.s['loc']=1;app.refresh();app.select('zina');app.close_chat(True);self.assertEqual(set(app.local_ids),{'zina','polkan'})
+    core.boss_down(app.world,'polkan');app.refresh()
+    self.assertEqual(app.local_ids,['zina']);self.assertEqual(app.npc,'zina');self.assertEqual(app.npcbox.props['values'],[app.npcs['zina']['name']])
+    self.assertEqual([x for rect,x in app.hits],['zina'])
+   finally:main.BASE=original
 if __name__=='__main__':unittest.main()
