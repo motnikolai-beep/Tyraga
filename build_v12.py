@@ -230,7 +230,8 @@ def build(root=ROOT):
     zpath=root/'dist'/'TYURYAGA_v12_FULL.zip'
     with zipfile.ZipFile(zpath,'w',zipfile.ZIP_DEFLATED) as z:
         for p in dest.rglob('*'):
-            if p.is_file():z.write(p,'Tyuryaga_Project/'+str(p.relative_to(dest)))
+            # Bytecode left by the smoke test or by a test run is not part of the game.
+            if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc':z.write(p,'Tyuryaga_Project/'+str(p.relative_to(dest)))
     with zipfile.ZipFile(zpath) as z:
         if z.testzip():raise RuntimeError('ZIP integrity check failed')
     print(json.dumps({'archive':str(zpath),'bytes':zpath.stat().st_size,'sha256':hashlib.sha256(zpath.read_bytes()).hexdigest()},indent=2))
@@ -271,6 +272,6 @@ def validate(dest):
     code="import json,core,world;from story_data import SCENES;n=json.load(open('npcs.json',encoding='utf8'));w=world.World(n);assert n['gvo']['name']=='Решёткин';assert n['str']['name']=='Цепи';assert world.NAMES==%r,world.NAMES;assert len(SCENES)>=110;assert 'сюжет' in __import__('ai').PROMPT;"%(LOC_NAMES,)
     # Twelve bosses are known to every system that lists them, each sits in their own location, and every turf rule has both scenes.
     code+="import fight,story10;bosses={k for k,v in n.items() if v['boss']};assert bosses==set(core.BOSS_LOC)==set(fight.STYLES)==set(story10.WEAK),bosses;assert all(n[k]['home']==l for k,l in core.BOSS_LOC.items());assert all(a in SCENES and a+'_'+b in SCENES and n[b]['home']==l for b,(l,a,_) in core.TURF.items());print('v12 structural smoke test OK')"
-    subprocess.run([sys.executable,'-c',code],cwd=dest,check=True)
+    subprocess.run([sys.executable,'-B','-c',code],cwd=dest,check=True)
 
 if __name__=='__main__':build()
