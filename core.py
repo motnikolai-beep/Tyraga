@@ -19,7 +19,8 @@ def diff(w):
 
 def default():
     return {'abs':7*60,'wis':5,'cha':5,'caste':0,'flags':{},'done':[],'stash':{},'inv':{'shiv':0,'phone':0,'tea':0,'key':0,'letter':0,'parcel':0},
-            'ousted':[],'timers':[],'events_done':[],'weak':[],'meals':{},'pending':[],'talk':0,'gym':0,'temple_day':0,'ending':None,'feed':[],'counters':{},'last_random':-999,'poverka_day':0}
+            'ousted':[],'timers':[],'events_done':[],'weak':[],'meals':{},'pending':[],'talk':0,'gym':0,'temple_day':0,'ending':None,'feed':[],'counters':{},'last_random':-999,'poverka_day':0,
+            'ex':{}}  # ex — свергнутые боссы: кто, когда, помирились ли, что с реваншем (former.py)
 
 def C(w):
     c=w.s.setdefault('core',default())
@@ -53,6 +54,19 @@ def add_caste(w,d,why=''):
         say(w,'★ Ваш статус изменился: %s → %s'%(old,new));w.event('caste','Статус игрока: %s → %s.'%(old,new),list(w.npcs),public=True)
 
 def flag(w,name,val=True):C(w)['flags'][name]=val
+def in_power(w,k):
+    """Босс у власти: числится боссом и не свергнут. Свергнутый остаётся в своей локации «бывшим»."""
+    return bool(w.npcs.get(k,{}).get('boss')) and k not in C(w)['ousted']
+def is_former(w,k):return bool(w.npcs.get(k,{}).get('boss')) and k in C(w)['ousted']
+def max_hp(w,k):return 120 if in_power(w,k) else 90
+def badge(w,k):
+    """Короткая пометка к имени героя: кем он стал для игрока (бывший босс…)."""
+    import former
+    out=[]
+    if is_former(w,k):out.append(former.word(k))
+    return ' · '.join(out)
+def shown_name(w,k):
+    b=badge(w,k);return w.npcs[k]['name']+(' · '+b if b else '')
 def has(w,name):return bool(C(w)['flags'].get(name))
 
 def mod(w,stat):
@@ -119,6 +133,12 @@ def apply(w,fx):
             if v not in c['weak']:c['weak'].append(v);out.append('Слабость найдена: '+w.npcs[v]['name'])
         elif k=='counter':
             for n_,d_ in v.items():c['counters'][n_]=c['counters'].get(n_,0)+d_
+        elif k in('peace','mock','revenge_off','duel','duel_ambush'):
+            import former  # бывшие боссы: мир, обида, отказ от реванша, бой за место
+            if k=='peace':out+=former.peace(w,v)
+            elif k=='mock':out+=former.mock(w,v)
+            elif k=='revenge_off':out+=former.off(w,v)
+            else:out+=former.start_duel(w,v,k=='duel_ambush')
     return out
 
 # ---- время и события ----
@@ -149,11 +169,14 @@ def force_sleep(w):
 def sleep(w,force=False):
     c=C(w)
     if not force and not is_night(w):raise ValueError('Шконка днём для вас закрыта: лечь можно только ночью (с 22:00). Займитесь делом или сходите на кормёжку.')
+    import former
+    former.night(w)  # кто ждал разборки и не дождался
     w.sleep()
     day_start=((c['abs']//1440)+(1 if c['abs']%1440>=5*60 else 0))*1440+6*60
     c['abs']=day_start;w.s['ap']=99
     if force:w.s['stamina']=int(w.s['stamina_max']*.6);w.s['hp']=max(1,w.s['hp']-8)
     c['flags'].pop('storm_tonight',None);c['flags'].pop('letter_today',None);c['pending'].append({'t':'scene','id':'morning'});schedule_day(w)
+    former.morning(w)
 
 def hops(a,b):
     if a==b:return 0
@@ -171,7 +194,10 @@ def travel_minutes(w,dest):return hops(w.s['loc'],dest)*HOP
 
 def travel(w,dest):
     if dest==w.s['loc']:return
-    m=travel_minutes(w,dest);w.go(dest);advance(w,m);random_event(w,'travel');story_check(w)
+    m=travel_minutes(w,dest);w.go(dest);advance(w,m)
+    import former
+    former.on_enter(w)
+    random_event(w,'travel');story_check(w)
 
 def talk(w):
     c=C(w);c['talk']+=1;m=7
@@ -199,12 +225,14 @@ def boss_down(w,k,by='бой'):
     c=C(w)
     if k in c['ousted'] or not w.npcs.get(k,{}).get('boss'):return False
     c['ousted'].append(k);name=w.npcs[k]['name'];s=w.s
+    import former
+    former.on_fall(w,k,by)
     w.event('boss_down','Босс «%s» повержен игроком (%s). Зона знает об этом.'%(name,by),list(w.npcs),public=True)
     for n in w.npcs:
         if n!=k:s['relations'][n]=max(-100,min(100,s['relations'].get(n,0)+6))
     s['street_rep']['earned']=min(100,s['street_rep']['earned']+12)
     add_caste(w,15,'босс «%s» повержен'%name)
-    say(w,'☠ %s выбывает из игры. Остальные теперь относятся к вам с опаской и уважением (+6 к отношению)'%name)
+    say(w,'☠ %s больше не у власти и остаётся в зоне. Остальные теперь относятся к вам с опаской и уважением (+6 к отношению)'%name)
     c['pending'].append({'t':'scene','id':'boss_aftermath','vars':{'boss':k}})
     return True
 
@@ -212,8 +240,10 @@ def on_duel(w,k,result):
     cn=C(w)['counters']
     if result=='Победа':cn['duel_win']=cn.get('duel_win',0)+1
     elif result=='Поражение':cn['duel_lose']=cn.get('duel_lose',0)+1
-    if result=='Победа':
-        if w.npcs[k].get('boss'):boss_down(w,k)
+    import former
+    if former.after_duel(w,k,result):pass  # реванш или драка с бывшим боссом: у них свои правила
+    elif result=='Победа':
+        if in_power(w,k):boss_down(w,k)
         else:add_caste(w,6,'победа над %s'%w.npcs[k]['name'])
     elif result=='Поражение':add_caste(w,-8,'проигрыш в драке')
     advance(w,30,quiet=True)
@@ -298,11 +328,12 @@ def req_ok(w,req):
         if k=='dig' and s['dig']<v:return False
         if k=='caste' and c['caste']<v:return False
         if k.startswith('item_') and c['inv'].get(k[5:],0)<v:return False
+        if k=='weak' and v not in c['weak']:return False
     return True
 
 def req_text(req):
     n={'cig':'сиг.','rub':'₽','dig':'участков подкопа','caste':'каста'}
-    return ', '.join('%s %s'%(v,n.get(k,k.replace('item_',''))) for k,v in req.items())
+    return ', '.join('известная слабость' if k=='weak' else '%s %s'%(v,n.get(k,k.replace('item_',''))) for k,v in req.items())
 
 def resolve_choice(w,choice,game_ok=None,bonus=0,rng=None):
     info=None;ok=True
@@ -370,6 +401,8 @@ def journal(w):
     out.append(('Доска слабостей боссов',wk or ['Все боссы повержены.']))
     tf=[('✔ %s: %s — свободно, %s больше не хозяин'%(NAMES[l],what,w.npcs[b]['name'])) if b in c['ousted'] else ('✘ %s: %s — по правилам хозяина (%s)'%(NAMES[l],what,w.npcs[b]['name'])) for b,(l,a,what) in TURF.items() if b in w.npcs]
     out.append(('Хозяева локаций',tf))
+    import former
+    out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))
     f=c['flags'];pl=[]
     for k,t in [('esc_key','ключ от подвала'),('shaw_hammer','геологический молоточек'),('shaw_poster','плакат'),('shaw_ledger','копия чёрной бухгалтерии')]:
         pl.append(('✔ ' if (f.get(k) or (k=='esc_key' and c['inv'].get('key'))) else '✘ ')+t)

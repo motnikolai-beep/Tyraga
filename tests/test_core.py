@@ -22,7 +22,7 @@ class T(unittest.TestCase):
         w=mk();a=core.C(w)['abs'];core.travel(w,3);self.assertEqual(core.C(w)['abs']-a,16);self.assertEqual(w.s['loc'],3)
     def test_boss_ousted(self):
         w=mk();b=w.s['relations'].get('graf',0);self.assertIn('zub',w.witnesses());self.assertTrue(core.boss_down(w,'zub'))
-        self.assertNotIn('zub',w.witnesses());self.assertEqual(w.s['relations']['graf']-b,6);self.assertGreater(core.C(w)['caste'],0);self.assertFalse(core.boss_down(w,'zub'))
+        self.assertIn('zub',w.witnesses());self.assertTrue(core.is_former(w,'zub'));self.assertFalse(core.in_power(w,'zub'));self.assertEqual(w.s['relations']['graf']-b,6);self.assertGreater(core.C(w)['caste'],0);self.assertFalse(core.boss_down(w,'zub'))
         self.assertTrue(any(e['kind']=='boss_down' and e['public'] for e in w.s['events']))
     def test_non_boss_not_ousted(self):self.assertFalse(core.boss_down(mk(),'kol'))
     def test_caste_tiers(self):

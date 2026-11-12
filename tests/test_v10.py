@@ -68,7 +68,7 @@ class T(unittest.TestCase):
         for _ in range(30):
             if 'zub' in core.C(w)['ousted']:break
             pick('weak_zub',0,w,rng=r)
-        self.assertIn('zub',core.C(w)['ousted']);self.assertNotIn('zub',w.witnesses())
+        self.assertIn('zub',core.C(w)['ousted']);self.assertIn('zub',w.witnesses());self.assertTrue(core.is_former(w,'zub'))
     def test_weakness_boosts_duel(self):
         from world import Duel
         w1,w2=mk(),mk();core.apply(w2,{'learn_weak':'zub'})

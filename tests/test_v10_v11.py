@@ -48,7 +48,7 @@ class V10(unittest.TestCase):
         for _ in range(40):
             if 'zub' in core.C(w)['ousted']:break
             pick('weak_zub',0,w,rng=r)
-        self.assertIn('zub',core.C(w)['ousted']);self.assertNotIn('zub',w.witnesses())
+        self.assertIn('zub',core.C(w)['ousted']);self.assertIn('zub',w.witnesses());self.assertTrue(core.is_former(w,'zub'))
     def test_hidden_endings(self):
         w=mk();w.s['day']=12;w.s['loc']=11;self.assertNotIn('shaw_final',list(available(w)));core.apply(w,{'flag':['shaw_hammer','shaw_poster','shaw_ledger','storm_tonight']});w.s['dig']=6;self.assertIn('shaw_final',list(available(w)))
         w.s['loc']=8;core.apply(w,{'flag':['cats_friend','cats_fed'],'rel':{'mat':35}});self.assertIn('c9_cats',list(available(w)))

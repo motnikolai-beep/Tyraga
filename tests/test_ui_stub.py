@@ -94,7 +94,8 @@ class Smoke(unittest.TestCase):
       g()
      if not ev.done:ev.finish()
      self.assertIsNone(app.modal)
-    core.C(app.world)['pending'].append({'t':'scene','id':'meal','vars':{'slot':'Завтрак'}});app.pump();self.assertIsNotNone(app.modal);app.modal.finish()
+    # Случайное прохождение сцен оставляет в очереди свои события; проверяем, что очередь открывает именно ожидающую сцену.
+    core.C(app.world)['pending'][:]=[{'t':'scene','id':'meal','vars':{'slot':'Завтрак'}}];app.pump();self.assertIsNotNone(app.modal);self.assertEqual(app.modal.sid,'meal');app.modal.finish()
    finally:main.BASE=original
 
  def test_menu_saves_settings_achievements(self):
@@ -172,16 +173,20 @@ class MastersOfPlaces(unittest.TestCase):
     core.boss_down(app.world,'kip');core.C(app.world)['pending'].clear();app.world.s['loc']=4;app.refresh();app.do_activity('wash')
     self.assertEqual(app.modal.sid,'wash');app.modal.finish()
    finally:main.BASE=original
- def test_ousted_boss_leaves_the_talk_list(self):
+ def test_ousted_boss_stays_as_former(self):
   import core
   original=main.BASE
   with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
    try:
     app=self.app(td,original)
-    # Выбран сосед босса. Босса свергают слабостью — в списке собеседников остаётся только сосед.
+    # Выбран сосед босса. Босса свергают — он остаётся в локации «бывшим»: с пометкой у имени и без боссовского запаса здоровья.
     app.world.s['loc']=1;app.refresh();app.select('zina');app.close_chat(True);self.assertEqual(set(app.local_ids),{'zina','polkan'})
     core.boss_down(app.world,'polkan');app.refresh()
-    self.assertEqual(app.local_ids,['zina']);self.assertEqual(app.npc,'zina');self.assertEqual(app.npcbox.props['values'],[app.npcs['zina']['name']])
-    self.assertEqual([x for rect,x in app.hits],['zina'])
+    self.assertEqual(set(app.local_ids),{'zina','polkan'});self.assertEqual(app.npc,'zina')
+    self.assertEqual(sorted(x for rect,x in app.hits),['polkan','zina'])
+    self.assertIn('бывший',core.shown_name(app.world,'polkan'));self.assertEqual(core.max_hp(app.world,'polkan'),90);self.assertEqual(core.max_hp(app.world,'zina'),90)
+    # С бывшим можно говорить, и его сцена «после падения» ждёт в его локации.
+    app.select('polkan');self.assertEqual(app.npc,'polkan');app.close_chat(True)
+    self.assertIn('ex_polkan',list(__import__('story_data').available(app.world)))
    finally:main.BASE=original
 if __name__=='__main__':unittest.main()

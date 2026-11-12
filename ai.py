@@ -66,13 +66,15 @@ def generate_chat(engine,w,k,text,on_text,cancel):
  count=max(0,int(engine.cfg['CHAT_HISTORY_MESSAGES']));hist=hist[-count:] if count else []
  if hist and hist[0]['role']=='assistant':hist=hist[1:]
  ctx={'место':c['location'],'отношение':c['relationship'],'уважуха':c['respect']['public_respect'],'карма':w.s['karma'],'память':c['memory'],'факты':c['known_facts'],'слухи':c['heard_rumors'],'долги':c['obligations'],'статус_игрока':c['player'],'сюжет':c['lore']}
- system=PROMPT.format(name=n['name'],role=n['role'])+'\n'+json.dumps(ctx,ensure_ascii=False)
+ import former
+ role=former.role(w,k)  # у свергнутого босса к прежнему характеру дописано, кем он стал
+ system=PROMPT.format(name=n['name'],role=role)+'\n'+json.dumps(ctx,ensure_ascii=False)
  reply=plain(engine.chat([{'role':'system','content':system}]+hist+[{'role':'user','content':text}],on_text=on_text,cancel=cancel));reply=re.sub(r'^\s*'+re.escape(n['name'])+r'\s*:\s*','',reply,flags=re.I).strip()
  out=zero();threat={'speaker':'player','target':'npc','evidence':text,'method':'exact_direct_threat'} if exact_threat(text) else None
  normal=engine.cfg['CHAT_FAST_MODE'].lower()!='true'
  evaluate=normal and engine.cfg['CHAT_EVALUATE_KARMA'].lower()=='true';detect=normal and engine.cfg['CHAT_THREAT_AI'].lower()=='true'
  if evaluate or detect:
-  payload={'npc':{'name':n['name'],'role':n['role']},'known_rumors':c['heard_rumors'],'last_messages':hist[-4:],'player_text':text,'npc_reply':reply}
+  payload={'npc':{'name':n['name'],'role':role},'known_rumors':c['heard_rumors'],'last_messages':hist[-4:],'player_text':text,'npc_reply':reply}
   try:
    o=obj(engine.chat([{'role':'system','content':ASSESS},{'role':'user','content':json.dumps(payload,ensure_ascii=False)}],json_mode=True,max_output=1024,cancel=cancel))
    if evaluate:

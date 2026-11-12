@@ -35,7 +35,7 @@ class EventWindow:
         return b
     def setport(s,who):
         if who and who in s.a.npcs:
-            im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[who]['portrait'])).resize((220,347),Image.Resampling.LANCZOS);s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p']);s.who.config(text=s.a.npcs[who]['name'])
+            im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[who]['portrait'])).resize((220,347),Image.Resampling.LANCZOS);s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p']);s.who.config(text=core.shown_name(s.w,who))
         else:
             try:
                 im=Image.open(s.a.base/'assets/player_avatar.png').resize((200,200));s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p'])
@@ -222,7 +222,7 @@ class MapView:
         for y in range(0,h,40):c.create_line(0,y,w,y,fill='#0b141d')
         for a1,b1 in core.EDGES:
             (x1,y1),(x2,y2)=pos[a1],pos[b1];c.create_line(x1,y1,x2,y2,fill='#162231',width=16);c.create_line(x1,y1,x2,y2,fill='#2a3d52',width=2,dash=(6,4))
-        cur=a.world.s['loc'];ousted=core.C(a.world)['ousted']
+        cur=a.world.s['loc']
         for i,(x,y) in pos.items():
             x0,y0,x1,y1=x-rw//2,y-rh//2,x+rw//2,y+rh//2;s.rects[i]=(x0,y0,x1,y1);act=i==cur;hov=i==s.hover
             c.create_rectangle(x0-4,y0-4,x1+4,y1+4,fill='#141b24',outline=GOLD if act else '#5c4831' if hov else '#2b3c50',width=3 if act else 2)
@@ -230,16 +230,16 @@ class MapView:
             c.create_rectangle(x0,y1-24,x1,y1,fill='#0b1420',stipple='gray50',outline='');c.create_text(x0+8,y1-12,anchor='w',text=core.NAMES[i].upper(),fill=GOLD if act else FG,font=('Segoe UI',10,'bold'))
             if not act:c.create_text(x1-8,y1-12,anchor='e',text='%d мин'%core.travel_minutes(a.world,i),fill=MUTED,font=('Segoe UI',9))
             else:c.create_text(x1-8,y1-12,anchor='e',text='ВЫ ЗДЕСЬ',fill=GOLD,font=('Segoe UI',9,'bold'))
-            present=[k for k,n in a.npcs.items() if n['home']==i and k not in ousted];cs=max(26,min(40,rh//3))
+            present=[k for k,n in a.npcs.items() if n['home']==i];cs=max(26,min(40,rh//3))
             for j,k in enumerate(present):
-                cx=x0+8+j*(cs+4);cy=y0+8;boss=a.npcs[k]['boss']
+                cx=x0+8+j*(cs+4);cy=y0+8;boss=core.in_power(a.world,k)  # золотое кольцо — только у босса при власти
                 c.create_oval(cx-2,cy-2,cx+cs+2,cy+cs+2,fill='#e5b767' if boss else '#2b3c50',outline='')
                 c.create_image(cx,cy,anchor='nw',image=s.chip(k,cs))
             if core.stash_has(a.world,i):c.create_image(x1-22,y0+16,image=s.icon('cig',24))
             if core.story_available_at(a.world,i):
                 c.create_oval(x1-24,y0+34,x1-4,y0+54,fill='#e5b767',outline='');c.create_text(x1-14,y0+44,text='!',fill='#111821',font=('Segoe UI',12,'bold'))
         if s.hover is not None:
-            i=s.hover;who=[a.npcs[k]['name'] for k,n in a.npcs.items() if n['home']==i and k not in ousted]
+            i=s.hover;who=[core.shown_name(a.world,k) for k,n in a.npcs.items() if n['home']==i]
             t='%s · %s · %s'%(core.NAMES[i],'вы здесь' if i==cur else 'идти %d мин'%core.travel_minutes(a.world,i),', '.join(who) or 'никого')
             c.create_rectangle(10,h-34,w-10,h-8,fill='#0b1420',outline='#34536a');c.create_text(20,h-21,anchor='w',text=t,fill=FG,font=('Segoe UI',11))
         else:c.create_text(w//2,h-20,text='Кликните по локации, чтобы пойти. Золотое кольцо у портрета — босс. «!» — доступна сюжетная сцена. Пачка — ваш схрон.',fill=MUTED,font=('Segoe UI',10))

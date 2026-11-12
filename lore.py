@@ -56,6 +56,8 @@ def npc_lore(w,k):
         if not c['flags'].get(flag):continue
         if k in d:out.append(d[k])
         elif ALL in d:out.append(d[ALL])
+    import former
+    out+=former.lore(w,k)  # бывший босс помнит своё падение; зона помнит, кто вернул себе власть
     if c['flags'].get('friend_'+k):out.append('Вы с игроком друзья.')
     if c['flags'].get('enemy_'+k):out.append('Вы с игроком враги.')
     for b in c['ousted']:

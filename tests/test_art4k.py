@@ -30,6 +30,9 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+# Модули, тексты которых написаны сразу в редакции v12: сборка не должна менять в них ни слова.
+V12_NATIVE = ('story12.py', 'former.py', 'cast.py')
+
 class Masters(unittest.TestCase):
     def test_every_location_has_a_unique_4k_master(self):
         seen = {}
@@ -150,10 +153,11 @@ class BuildRules(unittest.TestCase):
 
     def test_new_chapter_survives_the_text_adaptation(self):
         """Тексты новых боссов написаны сразу для v12: словарь замен сборки не должен в них ничего менять."""
-        source = (ROOT / 'story12.py').read_text(encoding='utf8')
-        renamed = sorted({word for word in B.PAT.findall(source) if B.REPLACE[word] != word})
-        self.assertEqual(renamed, [], 'в story12.py попали слова, которые сборка переименует')
-        self.assertEqual(B.transform_source(source), source)
+        for module in V12_NATIVE:
+            source = (ROOT / module).read_text(encoding='utf8')
+            renamed = sorted({word for word in B.PAT.findall(source) if B.REPLACE[word] != word})
+            self.assertEqual(renamed, [], 'в %s попали слова, которые сборка переименует' % module)
+            self.assertEqual(B.transform_source(source), source, module)
         for boss in B.NEW_BOSSES:
             for field in ('name', 'role', 'goal'):
                 self.assertEqual(B.text(NPCS[boss][field]), NPCS[boss][field], (boss, field))

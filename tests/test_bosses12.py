@@ -105,7 +105,9 @@ class Roster(unittest.TestCase):
             self.assertIn('weak_' + boss, offered(w))
             core.boss_down(w, boss)
             self.assertIsNone(core.boss_here(w))
-            self.assertNotIn(boss, w.witnesses())
+            self.assertIn(boss, w.witnesses())          # свергнутый остаётся в своей локации «бывшим»
+            self.assertTrue(core.is_former(w, boss))
+            self.assertFalse(core.in_power(w, boss))
 
     def test_each_new_boss_can_be_beaten_and_can_win(self):
         """Бот, который просто подходит и бьёт наугад, и выигрывает, и проигрывает каждому: ни стены, ни груши."""
@@ -349,7 +351,8 @@ class Story(unittest.TestCase):
 
     def test_scenes_are_well_formed(self):
         effects = {'cig', 'rub', 'hp', 'stamina', 'food', 'wis', 'cha', 'caste', 'karma', 'rel', 'rep', 'flag', 'item', 'time', 'timer'}
-        for sid in [s for s in SCENES if s.startswith('p12_') or s.startswith('letter') or s.split('_')[-1] in NEW]:
+        chapter = [s for s in SCENES if s.startswith('p12_') or s.startswith('letter') or s.split('_')[-1] in NEW]
+        for sid in [s for s in chapter if not s.startswith(('ex_', 'revenge_'))]:   # сцены бывших боссов проверяет test_former.py
             scene = SCENES[sid]
             self.assertTrue(scene['title'] and scene['title'] != sid, sid)
             for node in scene['nodes'].values():

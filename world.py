@@ -15,7 +15,8 @@ class World:
   self.s['version']=7
   for k,n in npcs.items():self.s['npc_state'].setdefault(k,{'last_turn':-9,'last_topic':''})['loc']=n['home'];self.s['npc_state'][k].setdefault('discussed_gossip',[])
  def witnesses(self):
-  out=core.C(self).get('ousted',[]);return [k for k,n in self.npcs.items() if n['home']==self.s['loc'] and k not in out]
+  # Свергнутый босс никуда не девается: он остаётся в своей локации «бывшим» и всё видит, как остальные жители.
+  return [k for k,n in self.npcs.items() if n['home']==self.s['loc']]
  def event(self,kind,text,witnesses=(),public=False):
   s=self.s;ids=list(dict.fromkeys(k for k in witnesses if k in self.npcs));e={'id':uuid.uuid4().hex,'day':s['day'],'turn':s['turn'],'kind':kind,'text':text,'witnesses':ids,'public':public};s['events'].append(e);s['events']=s['events'][-300:]
   for k in ids:s['knowledge'].setdefault(k,[]).append({**e,'source':'очевидец','verified':True});s['knowledge'][k]=s['knowledge'][k][-100:]
@@ -157,7 +158,7 @@ class World:
   return amount
 class Duel:
  def __init__(self,w,k,ambush=False,seed=None):
-  self.w=w;self.k=k;self.rng=random.Random(seed);self.hp=w.s['hp'];self.max_enemy=120 if w.npcs[k]['boss'] else 90;self.enemy=w.s['npc_health'].get(k,self.max_enemy);self.round=1;self.done=False;self.finished=False;self.log=[];self.result='Отступление';self.commit()
+  self.w=w;self.k=k;self.rng=random.Random(seed);self.hp=w.s['hp'];self.max_enemy=core.max_hp(w,k);self.enemy=w.s['npc_health'].get(k,self.max_enemy);self.round=1;self.done=False;self.finished=False;self.log=[];self.result='Отступление';self.commit()
   if ambush:self.hp=max(0,self.hp-12);self.log.append('Внезапный удар: -12 HP.')
   self.check()
  def commit(self):self.emove=self.rng.randrange(3);self.eaim=self.rng.randrange(3);self.guard=self.rng.random()<.25

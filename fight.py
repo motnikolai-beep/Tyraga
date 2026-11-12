@@ -75,8 +75,10 @@ class Fighter:
 class FightEngine:
     def __init__(s,w,k,ambush=False,seed=None,time_limit=90.0):
         s.w=w;s.k=k;s.rng=random.Random(seed);S=w.s;s.settled=False;g=S['gear']
-        style=STYLES.get(k,DEFAULT_STYLE);s.style=style;boss=w.npcs[k].get('boss',False)
-        mx=120 if boss else 90;ef=max(.02,min(1.0,S['npc_health'].get(k,mx)/mx));pf=max(.02,min(1.0,S['hp']/100))
+        import former
+        # В полную силу дерётся босс у власти и бывший, который пришёл за реваншем. Просто бывший — уже не тот.
+        style=STYLES.get(k,DEFAULT_STYLE);s.style=style;s.revenge=former.revenge_now(w,k);boss=s.boss=core.in_power(w,k) or s.revenge
+        mx=s.mx=120 if boss else 90;ef=max(.02,min(1.0,S['npc_health'].get(k,mx)/mx));pf=max(.02,min(1.0,S['hp']/100))
         s.p=Fighter('player',W_ARENA*.32,1,pf,min(S['stamina'],S['stamina_max']),g['damage']/16.0,g['armor'],1.0,1.0)
         s.e=Fighter('enemy',W_ARENA*.68,-1,ef,70+20*boss,style['power'],style['armor'],style['speed'],style['hp']*(1.15 if boss else .9))
         s.weak=core.weak_known(w,k);s.cigs=S['cig'];s.time=0.0;s.limit=time_limit;s.phase='intro';s.intro=1.6;s.events=[];s.result=None;s.reason='';s.hitstop=0.0
@@ -235,7 +237,7 @@ class FightEngine:
         if s.phase!='over':s.finish_fight('Отступление','Вы отступили')
         s.settled=True;w=s.w;S=w.s;k=s.k;res=s.result
         S['hp']=max(1,int(round(s.p.frac()*100)));S['stamina']=max(0,int(min(S['stamina_max'],s.p.stam)));S['cig']=max(0,S['cig']-s.p.cigs_used)
-        mx=120 if w.npcs[k].get('boss') else 90
+        mx=s.mx
         S['npc_health'][k]=0 if res=='Победа' else max(1,int(round(s.e.frac()*mx)))
         if res=='Поражение':S['rub']=max(0,S['rub']-15)
         if res=='Победа':

@@ -106,7 +106,7 @@ def _text_block(base, npc, place, width, height, indent=0):
     y = pad
     # плашка
     tag_font = _font(base, int(30 * scale))
-    tag = 'БОСС'
+    tag = npc.get('card_tag') or 'БОСС'  # у реванша своя плашка
     tag_w = _width(tag_font, tag) + int(22 * scale)
     tag_h = int(42 * scale)
     left = pad + indent

@@ -142,6 +142,9 @@ ACH=[
  ('turf1','Без хозяина','Освободить локацию от её хозяина.',lambda w:any(b in core.C(w)['ousted'] for b in core.TURF),False),
  ('turf_all','Ничья земля','Свергнуть всех четырёх хозяев локаций: двор, кухня, душевая и библиотека свободны.',lambda w:all(b in core.C(w)['ousted'] for b in core.TURF),False),
  ('letters5','Пишите письма','Отправить домой пять писем.',lambda w:_cnt(w,'letter')>=5,False),
+ ('ex_peace','Худой мир','Помириться со свергнутым боссом.',lambda w:_cnt(w,'ex_peace')>=1,False),
+ ('revenge_won','Дважды не входят','Отбить реванш бывшего босса.',lambda w:_cnt(w,'revenge_won')>=1,False),
+ ('boss_back','Свято место','Дать свергнутому боссу вернуть себе власть.',lambda w:_cnt(w,'boss_back')>=1,True),
 ]
 def ach_store(base):
     try:d=json.loads((Path(base)/'achievements.json').read_text(encoding='utf8'))

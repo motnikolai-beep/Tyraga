@@ -146,7 +146,7 @@ class App:
  def toast(self,title,text=''):
   try:
    t=tk.Toplevel(self.root);t.overrideredirect(True);t.attributes('-topmost',True);t.configure(bg=GOLD)
-   inner=tk.Frame(t,bg=PANEL);inner.pack(padx=2,pady=2);tk.Label(inner,text=title,bg=PANEL,fg=GOLD,font=('Segoe UI',12,'bold')).pack(padx=16,pady=(10,2),anchor='w');tk.Label(inner,text=text,bg=PANEL,fg=FG,font=('Segoe UI',10),wraplength=320,justify='left').pack(padx=16,pady=(0,10),anchor='w')
+   inner=tk.Frame(t,bg=PANEL);inner.pack(padx=2,pady=2);tk.Label(inner,text=title,bg=PANEL,fg=GOLD,font=('Segoe UI',12,'bold'),wraplength=380,justify='left').pack(padx=16,pady=(10,2),anchor='w');tk.Label(inner,text=text,bg=PANEL,fg=FG,font=('Segoe UI',10),wraplength=320,justify='left').pack(padx=16,pady=(0,10),anchor='w')
    t.update_idletasks();x=self.root.winfo_rootx()+self.root.winfo_width()-t.winfo_reqwidth()-24;y=self.root.winfo_rooty()+self.root.winfo_height()-t.winfo_reqheight()-60-40*len(getattr(self,'_toasts',[]));t.geometry(f'+{max(0,x)}+{max(0,y)}')
    self._toasts=getattr(self,'_toasts',[])+[t]
    def gone():
@@ -269,8 +269,8 @@ class App:
   for i,k in enumerate(present):
    x=start+i*(pw+gap);y=max(40,h-ph-65);key=('npc',k,pw,ph)
    if key not in self.cache:self.cache[key]=ImageTk.PhotoImage(Image.open(BASE/f'assets/{self.npcs[k]["portrait"]}.jpg').resize((pw,ph),Image.Resampling.LANCZOS))
-   active=k==self.npc or k==self.hover;c.create_rectangle(x-4,y-4,x+pw+4,y+ph+27,fill='#141b24',outline=GOLD if active else '#2b3c50',width=2);c.create_image(x,y,anchor='nw',image=self.cache[key]);c.create_text(x+pw/2,y+ph+14,text=self.npcs[k]['name'],fill=GOLD if active else FG,font=('Segoe UI',10,'bold'))
-   maximum=120 if self.npcs[k]['boss'] else 90;hp=self.world.s['npc_health'].get(k,maximum);c.create_rectangle(x,y-23,x+pw,y-8,fill='#211218',outline='');c.create_rectangle(x,y-23,x+pw*max(0,hp)/maximum,y-8,fill='#c45867',outline='');c.create_text(x+pw/2,y-16,text=f'{hp}/{maximum} HP',fill='white',font=('Segoe UI',9,'bold'));self.hits.append(((x-4,y-4,x+pw+4,y+ph+27),k))
+   active=k==self.npc or k==self.hover;c.create_rectangle(x-4,y-4,x+pw+4,y+ph+27,fill='#141b24',outline=GOLD if active else '#2b3c50',width=2);c.create_image(x,y,anchor='nw',image=self.cache[key]);c.create_text(x+pw/2,y+ph+14,text=core.shown_name(self.world,k),fill=GOLD if active else FG,font=('Segoe UI',10,'bold'))
+   maximum=core.max_hp(self.world,k);hp=min(maximum,self.world.s['npc_health'].get(k,maximum));c.create_rectangle(x,y-23,x+pw,y-8,fill='#211218',outline='');c.create_rectangle(x,y-23,x+pw*max(0,hp)/maximum,y-8,fill='#c45867',outline='');c.create_text(x+pw/2,y-16,text=f'{hp}/{maximum} HP',fill='white',font=('Segoe UI',9,'bold'));self.hits.append(((x-4,y-4,x+pw+4,y+ph+27),k))
   if self.npc:
    hist=self.world.s['history'].get(self.npc,[]);speech=self.stream_text.get(self.npc)
    if speech is None:speech=next((m['content'] for m in reversed(hist) if m['role']=='assistant'),'')
@@ -308,7 +308,7 @@ class App:
   self.title.config(text=NAMES[s['loc']]);self.hint.config(text='Местные: '+(', '.join(self.npcs[k]['name'] for k in self.world.witnesses()) or 'никого'))
   present=self.world.witnesses()
   if not self.npc or self.npc not in present:self.select_default()
-  # Свергнутый босс уходит из локации, даже если выбран был его сосед: список собеседников не должен помнить ушедшего.
+  # Список собеседников — те, кто сейчас в локации (свергнутый босс остаётся в ней «бывшим»).
   elif self.local_ids!=present:self.local_ids=present;self.npcbox.config(values=[self.npcs[k]['name'] for k in present]);self.npcbox.current(present.index(self.npc))
   if self.npc:self.who.config(text=self.npcs[self.npc]['name']);self.relation.config(text=f"Отношение {s['relations'].get(self.npc,0):+d}")
   else:self.who.config(text='—');self.relation.config(text='')
@@ -337,6 +337,7 @@ class App:
   if self.closed or self.modal or self.battle or self.mini or self.menu_open or not self.has_game:return
   p=core.pop_pending(self.world)
   if p and p.get('t')=='scene' and p['id'] in SCENES:self.open_scene(p['id'],p.get('vars'))
+  elif p and p.get('t')=='fight':self.fight(p['k'],bool(p.get('ambush')))  # реванш: бой начинается без вопроса «начать?»
  def open_scene(self,sid,vars=None):
   if self.view=='map':self.show_scene()
   if sid.startswith('meal'):self.sound.play('horn')

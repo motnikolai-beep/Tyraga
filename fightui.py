@@ -98,7 +98,9 @@ class FightWindow:
         s.refs['intro']=None
         try:
             npc=s.a.npcs[s.k]
-            if npc.get('boss'):s.refs['intro']=ImageTk.PhotoImage(bosscard.render(s.a.base,npc,NAMES[npc['home']],(W_ARENA,H_ARENA),scene));s.eng.intro=max(s.eng.intro,bosscard.INTRO_SECONDS)
+            # Заставка — у босса при власти и у бывшего, который пришёл за реваншем (у него своя плашка и подпись).
+            if s.eng.revenge:npc=dict(npc,card_tag='РЕВАНШ',tagline='Пришёл за своим. Второй попытки не будет.')
+            if s.eng.boss:s.refs['intro']=ImageTk.PhotoImage(bosscard.render(s.a.base,npc,NAMES[npc['home']],(W_ARENA,H_ARENA),scene));s.eng.intro=max(s.eng.intro,bosscard.INTRO_SECONDS)
         except Exception:s.refs['intro']=None
         try:
             im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[s.k]['portrait'])).convert('RGB');im=ImageOps.fit(im,(44,44),centering=(.5,.2));s.refs['pe']=ImageTk.PhotoImage(im)
