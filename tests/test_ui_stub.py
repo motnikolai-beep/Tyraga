@@ -94,12 +94,19 @@ class Smoke(unittest.TestCase):
       state['evidence']=sc['trig'].get('thread22_branch',False)
       loc,start,_=thread22.STAGES[stage];app.world.s.update(loc=loc,day=6)
       core.C(app.world)['abs']=6*1440+start
+     if 'follow23' in sc['trig']:
+      import follow23,thread22
+      stage=sc['trig']['follow23'];branch=sc['trig']['follow23_branch']
+      old=thread22.state(app.world);old['stage']='done';old['days']['final']=6;old['evidence']=branch=='fact'
+      new=follow23.state(app.world);new['stage']=stage;new['days']={'zoya':7,'tim':8};new['fact']=branch=='fact'
+      loc,start,_=follow23.STAGES[stage];app.world.s.update(loc=loc,day=9)
+      core.C(app.world)['abs']=9*1440+start
      ev=uikit.EventWindow(app,sid,{'slot':'Обед'});self.assertIs(app.modal,ev)
      for _ in range(12):
       chs=[c for c in ev.cur['ch'] if core.req_ok(app.world,c.get('req',{}))]
       if not chs:break
       ev.pick(r.choice(chs));g=ev.opts.children[-1].props.get('command') if ev.opts.children else None
-      if 'thread22' in sc['trig']:break  # only one choice per timed chapter
+      if 'thread22' in sc['trig'] or 'follow23' in sc['trig']:break  # one choice per timed chapter
       if not g or ev.done:break
       g()
      if not ev.done:ev.finish()

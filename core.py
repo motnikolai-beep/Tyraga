@@ -152,6 +152,9 @@ def apply(w,fx):
         elif k=='thread22':
             import thread22
             out+=thread22.choose(w,*v)
+        elif k=='follow23':
+            import follow23
+            out+=follow23.choose(w,*v)
         elif k in('peace','mock','revenge_off','duel','duel_ambush'):
             import former  # бывшие боссы: мир, обида, отказ от реванша, бой за место
             if k=='peace':out+=former.peace(w,v)
@@ -446,6 +449,8 @@ def journal(w):
     out.append(('Слухи зоны',zone_news.journal(w)))
     import thread22
     out.append(('Чужая строка',thread22.journal(w)))
+    import follow23
+    if thread22.state(w)['stage']=='done':out.append(('После слуха',follow23.journal(w)))
     import life15,boss15
     out.append(('Повседневная жизнь',life15.journal(w)))
     import hotspots16

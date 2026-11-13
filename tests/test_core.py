@@ -66,6 +66,15 @@ class T(unittest.TestCase):
                     r['evidence']=sc['trig'].get('thread22_branch',False)
                     loc,start,_=thread22.STAGES[stage];w.s.update(loc=loc,day=6)
                     core.C(w)['abs']=6*1440+start
+                if 'follow23' in sc['trig']:
+                    import follow23,thread22
+                    stage=sc['trig']['follow23'];branch=sc['trig']['follow23_branch']
+                    prev=thread22.state(w);prev['stage']='done';prev['days']['final']=6
+                    prev['evidence']=branch=='fact'
+                    r=follow23.state(w);r['stage']=stage;r['days']={'zoya':7,'tim':8}
+                    r['fact']=branch=='fact'
+                    loc,start,_=follow23.STAGES[stage];w.s.update(loc=loc,day=9)
+                    core.C(w)['abs']=9*1440+start
                 while node and n<10:
                     chs=sc['nodes'][node]['ch']
                     if not chs:break

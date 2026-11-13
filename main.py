@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Чужая строка v22')
+  self.root=root;root.title('Тюряга · После слуха v23')
   screen=ui_layout.screen_size(root);width,height=ui_layout.main_size(screen);self._window_width=width
   root.geometry(f'{width}x{height}');root.minsize(min(960,width),min(640,height));root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']

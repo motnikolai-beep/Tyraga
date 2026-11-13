@@ -326,6 +326,9 @@ def _ok(w,tr,loc=None):
     if 'thread22' in tr:
         import thread22
         if not thread22.ready(w,tr['thread22'],tr.get('thread22_branch'),loc=loc):return False
+    if 'follow23' in tr:
+        import follow23
+        if not follow23.ready(w,tr['follow23'],tr.get('follow23_branch'),loc=loc):return False
     if tr.get('note17_followup'):
         import note17
         if not note17.followup_ready(w):return False
@@ -362,3 +365,4 @@ import story17  # v17: заметка у койки и последствия
 import story15  # v15: три дня письма и быт
 import story10  # v10: события дня, реакции на касту, дела, слабости, скрытые концовки
 import story22  # optional: local rumour, verification, and delayed consequences
+import story23  # epilogue after either branch of the duty-list story
