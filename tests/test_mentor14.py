@@ -21,6 +21,8 @@ class Geometry(unittest.TestCase):
         ids=[step[0] for step in mentor14.STEPS]
         self.assertEqual(len(ids),len(set(ids)))
         self.assertTrue({'chat','chat_send','map','boss','map_room','more','menu','portrait','hud','actions'}<=set(ids))
+        self.assertIn('Я Мирон.',mentor14.STEPS[0][2])
+        self.assertIn('ДЕД МИРОН · НАСТАВНИК',Path(mentor14.__file__).read_text(encoding='utf8'))
         with Image.open(Path(__file__).resolve().parents[1]/'assets/mentor_v14.jpg') as im:
             self.assertGreaterEqual(im.width,400)
             self.assertGreaterEqual(im.height,600)

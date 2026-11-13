@@ -10,7 +10,7 @@ def build(root=ROOT):
     dest=root/'dist'/'Tyuryaga_v14'
     if dest.exists():shutil.rmtree(dest)
     shutil.copytree(previous,dest,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
-    (dest/'VERSION.txt').write_text('Tyuryaga v14 / Лис-наставник\n',encoding='utf8')
+    (dest/'VERSION.txt').write_text('Tyuryaga v14 / Дед Мирон — наставник\n',encoding='utf8')
     (dest/'ПРОЧИТАЙТЕ.txt').write_text((root/'ИГРАТЬ_v14.md').read_text(encoding='utf8'),encoding='utf8')
     (dest/'CHANGELOG_v14.md').write_text((root/'CHANGELOG_v14.md').read_text(encoding='utf8'),encoding='utf8')
     (dest/'TEST_REPORT.md').write_text('# Проверка v14\nЗапуск: `python -m unittest discover -s tests`. Тесты используют заглушки Tk и не являются реальным запуском Windows GUI, звука или модели.\n',encoding='utf8')

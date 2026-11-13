@@ -12,7 +12,7 @@ INK='#060b12'; PANEL='#111c2a'; GOLD='#e5b767'; FG='#f2efe7'
 # action='tap' requires an actual click on the highlighted widget. 'read' advances
 # only by the coach's button. No compulsory spending, travel, or chat submission.
 STEPS=(
- ('welcome','Знакомься, новичок', 'Я Лис. Сюда привели по делу, указанному в личном деле. Впереди — работа, соседи, двенадцать хозяев мест и твои решения. Выживай и выбирай концовку; я покажу кнопки без покупок и отправки слов в ИИ.', 'scene','read'),
+ ('welcome','Знакомься, новичок', 'Я Мирон. На зоне зовут Дедом. Ты здесь по делу из личного дела; я давно научился читать людей и местные правила. Впереди — работа, соседи, двенадцать хозяев мест и твои решения. Покажу кнопки, не потратив твои деньги и не отправив слов в ИИ.', 'scene','read'),
  ('hud','Следи за собой', 'Здесь здоровье, силы, сигареты, рубли и статус. Работа и переходы тратят время; раздача еды бывает утром, днём и вечером.', 'hud','read'),
  ('actions','Дела на месте', 'Внизу действия именно этой локации. У недоступных действий написана причина. За золотым знаком «!» на карте прячутся сюжетные сцены и проверки d20.', 'actions','read'),
  ('portrait','Кто здесь живёт?', 'Нажми на портрет соседа. Так ты выберешь собеседника и откроешь окно разговора. Отношения меняются из-за поступков; друг может помочь, враг — донести.', 'portrait','tap'),
@@ -127,7 +127,7 @@ class MentorTour:
                 im=im.convert('RGB').resize((82,110),Image.Resampling.LANCZOS)
                 self.photo=ImageTk.PhotoImage(im)
             tk.Label(card,image=self.photo,bg=PANEL).place(x=12,y=10)
-        tk.Label(card,text='ЛИС · НАСТАВНИК',fg=GOLD,bg=PANEL,font=('Segoe UI',12,'bold')).place(x=105,y=14)
+        tk.Label(card,text='ДЕД МИРОН · НАСТАВНИК',fg=GOLD,bg=PANEL,font=('Segoe UI',12,'bold')).place(x=105,y=14)
         tk.Label(card,text=f'{self.index+1}/{len(STEPS)}  {title}',fg=FG,bg=PANEL,font=('Segoe UI',10,'bold'),wraplength=195,justify='left').place(x=105,y=43)
         if key=='welcome':
             import profile
