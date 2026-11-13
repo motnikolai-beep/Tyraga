@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image,ImageTk,ImageOps,ImageEnhance
 from gfx import open_rgb
-import core,meta
+import core,meta,ui_layout
 BG='#090d12';PANEL='#101720';CARD='#182331';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';GREEN='#6fcf97';RED='#c45867'
 HOWTO="""УПРАВЛЕНИЕ
 • Esc — меню, M — карта зоны, F11 — полный экран, Ctrl+S — быстрое сохранение, F2 — история разговора.
@@ -32,8 +32,11 @@ HOWTO="""УПРАВЛЕНИЕ
 class Menu:
     def __init__(s,app):
         s.a=app;s.visible=False;s.cache={};s.inner=None;s.vars={};s.tab='gfx'
-        s.f=tk.Frame(app.root,bg=BG);s.c=tk.Canvas(s.f,bg=BG,highlightthickness=0);s.c.pack(fill='both',expand=True)
+        s.f=tk.Frame(app.root,bg=BG);s.c=tk.Canvas(s.f,bg=BG,highlightthickness=0)
+        s.scroll=tk.Scrollbar(s.f,orient='vertical',command=s.c.yview);s.scroll.pack(side='right',fill='y')
+        s.c.configure(yscrollcommand=s.scroll.set);s.c.pack(side='left',fill='both',expand=True)
         s.inner=tk.Frame(s.c,bg='#0d1520');s.c.bind('<Configure>',lambda e:s.paint())
+        s.c.bind('<MouseWheel>',lambda e:s.c.yview_scroll(-int(e.delta/120) if e.delta else 0,'units'))
     # ---- показ ----
     def show(s,screen='main'):
         if getattr(s.a,'mentor',None):return
@@ -50,20 +53,28 @@ class Menu:
             bg=s.a.base/'assets/menu_bg.jpg'  # отдельный фон меню, если он есть в сборке; иначе камера
             if not bg.is_file():bg=s.a.base/'assets/loc_0.jpg'
             s.cache.clear();im=ImageOps.fit(open_rgb(bg,(w,h)),(w,h));s.cache[key]=ImageTk.PhotoImage(ImageEnhance.Brightness(im).enhance(.32*br))
-        c.delete('all');c.create_image(0,0,anchor='nw',image=s.cache[key]);c.create_window(w//2,h//2,window=s.inner,anchor='center')
+        try:reqh=s.inner.winfo_reqheight()
+        except (TypeError,AttributeError):reqh=None
+        reqh=reqh if isinstance(reqh,int) else h
+        c.delete('all');c.create_image(0,0,anchor='nw',image=s.cache[key])
+        c.create_window(w//2,16 if reqh+32>h else h//2,window=s.inner,anchor='n' if reqh+32>h else 'center')
+        c.configure(scrollregion=(0,0,w,max(h,reqh+32)))
     def go(s,screen,**kw):
         for x in s.inner.winfo_children():x.destroy()
-        s.screen=screen;getattr(s,'screen_'+screen)(**kw);s.paint()
+        s.screen=screen;getattr(s,'screen_'+screen)(**kw);s.inner.update_idletasks();s.paint();s.c.yview_moveto(0)
     # ---- элементы ----
     def title(s,t,size=26,color=GOLD):tk.Label(s.inner,text=t,bg=s.inner.cget('bg'),fg=color,font=('Segoe UI',size,'bold')).pack(padx=40,pady=(26,6))
-    def note(s,t,color=MUTED,size=10,wrap=620,anchor='center'):tk.Label(s.inner,text=t,bg=s.inner.cget('bg'),fg=color,font=('Segoe UI',size),wraplength=wrap,justify='left' if anchor=='w' else 'center').pack(padx=30,pady=3,anchor=anchor)
+    def note(s,t,color=MUTED,size=10,wrap=620,anchor='center'):
+        width=ui_layout.screen_size(s.a.root)[0]
+        tk.Label(s.inner,text=t,bg=s.inner.cget('bg'),fg=color,font=('Segoe UI',size),wraplength=min(wrap,ui_layout.text_wrap(width,130)),justify='left' if anchor=='w' else 'center').pack(padx=30,pady=3,anchor=anchor)
     def btn(s,t,fn,primary=False,state='normal',width=34,parent=None):
-        b=tk.Button(parent or s.inner,text=t,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',disabledforeground='#4b5a6b',relief='flat',bd=0,font=('Segoe UI',12,'bold'),width=width,pady=9,cursor='hand2',state=state)
+        if parent is None:width=min(width,ui_layout.menu_chars(ui_layout.screen_size(s.a.root)[0],s.a.settings.get('ui_scale',1),width))
+        b=tk.Button(parent or s.inner,text=t,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',disabledforeground='#4b5a6b',relief='flat',bd=0,font=('Segoe UI',12,'bold'),width=width,wraplength=ui_layout.text_wrap(ui_layout.screen_size(s.a.root)[0],160),pady=9,cursor='hand2',state=state)
         if parent is None:b.pack(pady=4,padx=60)
         return b
     # ---- экраны ----
     def screen_main(s):
-        a=s.a;s.title('ТЮРЯГА',40);s.note('Календарь и снаряжение · v20',MUTED,11)
+        a=s.a;s.title('ТЮРЯГА',40);s.note('Масштабирование и проверка · v21',MUTED,11)
         if a.has_game:s.note('Текущая игра: день %d · %s · %s'%(a.world.s['day'],core.hhmm(a.world),core.diff(a.world)['name']),GOLD,10)
         if a.has_game:s.btn('▶  Продолжить',s.hide,True)
         s.btn('Новая игра',lambda:s.go('new'),not a.has_game)
@@ -78,14 +89,15 @@ class Menu:
     def screen_new(s):
         s.title('Новая игра',24);s.note('Выберите сложность. Её нельзя сменить в уже начатой игре.')
         s.diffvar=tk.StringVar(value='normal')
+        choice_width=ui_layout.menu_chars(ui_layout.screen_size(s.a.root)[0],s.a.settings.get('ui_scale',1),60)
         for k,d in core.DIFFS.items():
-            r=tk.Radiobutton(s.inner,text='%s\n%s'%(d['name'],d['desc']),variable=s.diffvar,value=k,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,justify='left',anchor='w',font=('Segoe UI',11),wraplength=560,padx=14,pady=8,indicatoron=0,width=60)
+            r=tk.Radiobutton(s.inner,text='%s\n%s'%(d['name'],d['desc']),variable=s.diffvar,value=k,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,justify='left',anchor='w',font=('Segoe UI',11),wraplength=ui_layout.text_wrap(ui_layout.screen_size(s.a.root)[0],150),padx=14,pady=8,indicatoron=0,width=choice_width)
             r.pack(pady=4,padx=30)
         import profile
         s.note('Прошлое героя — сюжетная деталь, бонусов не даёт.',GOLD,10)
         s.originvar=tk.StringVar(value='paper')
         for key,(case,term,_story) in profile.ORIGINS.items():
-            tk.Radiobutton(s.inner,text=case+' · '+term,variable=s.originvar,value=key,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,indicatoron=0,width=60).pack(pady=2,padx=30)
+            tk.Radiobutton(s.inner,text=case+' · '+term,variable=s.originvar,value=key,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,indicatoron=0,width=choice_width,wraplength=ui_layout.text_wrap(ui_layout.screen_size(s.a.root)[0],150)).pack(pady=2,padx=30)
         s.btn('Начать игру',s.start_new,True);s.btn('Назад',lambda:s.go('main'))
     def start_new(s):
         a=s.a
@@ -98,12 +110,15 @@ class Menu:
         for sid in ids:
             sm=meta.summary(a.base_data,sid)
             if sid=='legacy' and sm is None:continue
+            compact=ui_layout.screen_size(a.root)[0]<1100 or a.settings.get('ui_scale',1)>1.25
             row=tk.Frame(s.inner,bg=PANEL);row.pack(fill='x',padx=30,pady=4)
-            tk.Label(row,text=names[sid],bg=PANEL,fg=GOLD,font=('Segoe UI',11,'bold'),width=20,anchor='w').pack(side='left',padx=8)
-            tk.Label(row,text=meta.summary_text(sm),bg=PANEL,fg=FG if sm and 'error' not in sm else MUTED,font=('Segoe UI',10),wraplength=520,justify='left',anchor='w',width=62).pack(side='left',padx=6,pady=6)
-            if mode=='load':s.btn('Загрузить',lambda sid=sid:s.do_load(sid),state='normal' if sm and 'error' not in sm else 'disabled',width=12,parent=row).pack(side='right',padx=6)
-            else:s.btn('Сохранить',lambda sid=sid:s.do_save(sid),width=12,parent=row).pack(side='right',padx=6)
-            if sid in meta.SLOTS and sm:s.btn('✕',lambda sid=sid,mode=mode:s.do_del(sid,mode),width=3,parent=row).pack(side='right')
+            tk.Label(row,text=names[sid],bg=PANEL,fg=GOLD,font=('Segoe UI',11,'bold'),anchor='w').pack(**({'anchor':'w','padx':8} if compact else {'side':'left','padx':8}))
+            tk.Label(row,text=meta.summary_text(sm),bg=PANEL,fg=FG if sm and 'error' not in sm else MUTED,font=('Segoe UI',10),wraplength=min(520,ui_layout.text_wrap(ui_layout.screen_size(a.root)[0],150)),justify='left',anchor='w').pack(**({'anchor':'w','padx':8,'pady':6} if compact else {'side':'left','padx':8,'pady':6}))
+            buttons=tk.Frame(row,bg=PANEL) if compact else row
+            if compact:buttons.pack(anchor='w',padx=8)
+            if mode=='load':s.btn('Загрузить',lambda sid=sid:s.do_load(sid),state='normal' if sm and 'error' not in sm else 'disabled',width=12,parent=buttons).pack(side='left' if compact else 'right',padx=6)
+            else:s.btn('Сохранить',lambda sid=sid:s.do_save(sid),width=12,parent=buttons).pack(side='left' if compact else 'right',padx=6)
+            if sid in meta.SLOTS and sm:s.btn('✕',lambda sid=sid,mode=mode:s.do_del(sid,mode),width=3,parent=buttons).pack(side='left' if compact else 'right')
         s.btn('Назад',lambda:s.go('main'))
     def do_load(s,sid):
         a=s.a
@@ -126,18 +141,22 @@ class Menu:
     AI_NUM=[('CHAT_MAX_OUTPUT_TOKENS','Макс. длина ответа, токенов',64,16384),('CHAT_HISTORY_MESSAGES','Сообщений истории в контексте',0,100),('CHAT_MAX_INPUT_CHARS','Макс. длина вашей реплики, символов',100,50000),('CHAT_CONTEXT_LENGTH','Контекст модели, токенов (нужен перезапуск ИИ)',2048,65536),('LLAMA_GPU_LAYERS','Слоёв на GPU (нужен перезапуск ИИ)',0,200),('SCOUT_PORT','Порт сервера (нужен перезапуск ИИ)',1024,65535)]
     AI_STR=[('SCOUT_MODEL_PATH','Файл модели .gguf'),('SCOUT_MMPROJ_PATH','Файл mmproj .gguf'),('LLAMA_SERVER_PATH','llama-server.exe')]
     def screen_settings(s,tab=None):
-        a=s.a;s.tab=tab or s.tab;s.title('Настройки',24);bar=tk.Frame(s.inner,bg=s.inner.cget('bg'));bar.pack(pady=4)
-        for k,t in [('gfx','Графика'),('snd','Звук'),('ai','ИИ-модель'),('game','Игра')]:
-            s.btn(t,lambda k=k:s.go('settings',tab=k),primary=(k==s.tab),width=14,parent=bar).pack(side='left',padx=3)
+        a=s.a;s.tab=tab or s.tab;s.title('Настройки',24)
+        screen=ui_layout.screen_size(a.root)[0];compact=screen<1100 or a.settings.get('ui_scale',1)>1.25
+        bar=tk.Frame(s.inner,bg=s.inner.cget('bg'));bar.pack(pady=4)
+        for i,(k,t) in enumerate([('gfx','Графика'),('snd','Звук'),('ai','ИИ-модель'),('game','Игра')]):
+            button=s.btn(t,lambda k=k:s.go('settings',tab=k),primary=(k==s.tab),width=10 if compact else 14,parent=bar)
+            if compact:button.grid(row=i//2,column=i%2,padx=3,pady=2)
+            else:button.pack(side='left',padx=3)
         box=tk.Frame(s.inner,bg=PANEL);box.pack(fill='x',padx=30,pady=8);s.vars={};st=a.settings
         def scale(label,key,lo,hi,step,val):
-            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=5);tk.Label(r,text=label,bg=PANEL,fg=FG,font=('Segoe UI',11),width=34,anchor='w').pack(side='left')
-            v=tk.DoubleVar(value=val);s.vars[key]=v;tk.Scale(r,from_=lo,to=hi,resolution=step,orient='horizontal',variable=v,length=320,bg=PANEL,fg=FG,troughcolor=CARD,highlightthickness=0).pack(side='left')
+            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=5);tk.Label(r,text=label,bg=PANEL,fg=FG,font=('Segoe UI',11),wraplength=ui_layout.text_wrap(screen,145),width=0 if compact else 34,anchor='w').pack(**({'anchor':'w'} if compact else {'side':'left'}))
+            v=tk.DoubleVar(value=val);s.vars[key]=v;tk.Scale(r,from_=lo,to=hi,resolution=step,orient='horizontal',variable=v,length=min(320,screen-170) if compact else 320,bg=PANEL,fg=FG,troughcolor=CARD,highlightthickness=0).pack(side='left')
         def check(label,key,val,store=None):
-            v=tk.BooleanVar(value=val);(store or s.vars)[key]=v;tk.Checkbutton(box,text=label,variable=v,bg=PANEL,fg=FG,selectcolor=CARD,activebackground=PANEL,activeforeground=GOLD,font=('Segoe UI',11),anchor='w').pack(fill='x',padx=12,pady=3)
+            v=tk.BooleanVar(value=val);(store or s.vars)[key]=v;tk.Checkbutton(box,text=label,variable=v,bg=PANEL,fg=FG,selectcolor=CARD,activebackground=PANEL,activeforeground=GOLD,font=('Segoe UI',11),wraplength=ui_layout.text_wrap(screen,145),anchor='w').pack(fill='x',padx=12,pady=3)
         def entry(label,key,val,width=12):
-            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=4);tk.Label(r,text=label,bg=PANEL,fg=FG,font=('Segoe UI',11),width=46,anchor='w').pack(side='left')
-            v=tk.StringVar(value=str(val));s.vars[key]=v;tk.Entry(r,textvariable=v,width=width,bg=CARD,fg=FG,insertbackground=GOLD,relief='flat',font=('Segoe UI',11)).pack(side='left',padx=4,ipady=4)
+            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=4);tk.Label(r,text=label,bg=PANEL,fg=FG,font=('Segoe UI',11),wraplength=ui_layout.text_wrap(screen,145),width=0 if compact else 46,anchor='w').pack(**({'anchor':'w'} if compact else {'side':'left'}))
+            v=tk.StringVar(value=str(val));s.vars[key]=v;tk.Entry(r,textvariable=v,width=min(width,ui_layout.menu_chars(screen,a.settings.get('ui_scale',1),width)) if compact else width,bg=CARD,fg=FG,insertbackground=GOLD,relief='flat',font=('Segoe UI',11)).pack(**({'fill':'x','padx':4,'ipady':4} if compact else {'side':'left','padx':4,'ipady':4}))
         if s.tab=='gfx':
             scale('Яркость','brightness',.4,1.6,.05,st['brightness']);scale('Масштаб интерфейса','ui_scale',.8,1.8,.1,st['ui_scale'])
             check('Полный экран (F11)','fullscreen',st['fullscreen']);check('Фон сцены: заполнять окно целиком','cover',st['cover'])
@@ -146,8 +165,8 @@ class Menu:
         elif s.tab=='ai':
             cfg=a.engine.cfg
             for k,t in s.AI_BOOL:check(t,k,str(cfg.get(k,'false')).lower()=='true')
-            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=5);tk.Label(r,text='Температура (креативность ответов)',bg=PANEL,fg=FG,font=('Segoe UI',11),width=34,anchor='w').pack(side='left')
-            v=tk.DoubleVar(value=float(cfg.get('CHAT_TEMPERATURE',.6)));s.vars['CHAT_TEMPERATURE']=v;tk.Scale(r,from_=0,to=1.5,resolution=.05,orient='horizontal',variable=v,length=320,bg=PANEL,fg=FG,troughcolor=CARD,highlightthickness=0).pack(side='left')
+            r=tk.Frame(box,bg=PANEL);r.pack(fill='x',padx=12,pady=5);tk.Label(r,text='Температура (креативность ответов)',bg=PANEL,fg=FG,font=('Segoe UI',11),width=0 if compact else 34,anchor='w').pack(**({'anchor':'w'} if compact else {'side':'left'}))
+            v=tk.DoubleVar(value=float(cfg.get('CHAT_TEMPERATURE',.6)));s.vars['CHAT_TEMPERATURE']=v;tk.Scale(r,from_=0,to=1.5,resolution=.05,orient='horizontal',variable=v,length=min(320,screen-170) if compact else 320,bg=PANEL,fg=FG,troughcolor=CARD,highlightthickness=0).pack(side='left')
             for k,t,lo,hi in s.AI_NUM:entry(t,k,cfg.get(k,''))
             for k,t in s.AI_STR:entry(t,k,cfg.get(k,''),width=52)
         else:
@@ -156,10 +175,10 @@ class Menu:
             tk.Label(box,text='Сложность текущей игры: %s'%d['name'],bg=PANEL,fg=GOLD,font=('Segoe UI',11,'bold')).pack(anchor='w',padx=12,pady=6)
         s.msg=tk.Label(s.inner,text='',bg=s.inner.cget('bg'),fg=GREEN,font=('Segoe UI',10),wraplength=620);s.msg.pack()
         row=tk.Frame(s.inner,bg=s.inner.cget('bg'));row.pack(pady=6)
-        s.btn('Применить',s.apply_settings,True,width=16,parent=row).pack(side='left',padx=4)
+        s.btn('Применить',s.apply_settings,True,width=16,parent=row).pack(side='top' if compact else 'left',padx=4,pady=2)
         if s.tab=='ai':
-            s.btn('Проверить файлы',s.check_files,width=16,parent=row).pack(side='left',padx=4);s.btn('Перезапустить ИИ',s.restart_ai,width=18,parent=row).pack(side='left',padx=4)
-        s.btn('Назад',lambda:s.go('main'),width=12,parent=row).pack(side='left',padx=4)
+            s.btn('Проверить файлы',s.check_files,width=16,parent=row).pack(side='top' if compact else 'left',padx=4,pady=2);s.btn('Перезапустить ИИ',s.restart_ai,width=18,parent=row).pack(side='top' if compact else 'left',padx=4,pady=2)
+        s.btn('Назад',lambda:s.go('main'),width=12,parent=row).pack(side='top' if compact else 'left',padx=4,pady=2)
     def apply_settings(s):
         a=s.a;v=s.vars;errs=[]
         try:

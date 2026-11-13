@@ -3,7 +3,7 @@
 import tkinter as tk,random
 from PIL import Image,ImageTk,ImageOps,ImageDraw,ImageEnhance
 from gfx import open_rgb
-import core
+import core,ui_layout
 from story_data import SCENES
 BG='#090d12';PANEL='#101720';CARD='#182331';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';RED='#c45867';GREEN='#6fcf97'
 STATN={'wis':'МУДР','cha':'ХАР'}
@@ -19,15 +19,27 @@ class EventWindow:
         s.left=tk.Frame(s.top,bg=PANEL,width=250);s.left.grid(row=0,column=0,sticky='ns',padx=(12,0),pady=12)
         s.portrait=tk.Label(s.left,bg=PANEL);s.portrait.pack(padx=8,pady=8);s.who=tk.Label(s.left,bg=PANEL,fg=GOLD,font=('Segoe UI',13,'bold'));s.who.pack()
         s.stats=tk.Label(s.left,bg=PANEL,fg=MUTED,font=('Segoe UI',9),justify='left');s.stats.pack(pady=12,padx=8,anchor='w')
-        s.right=tk.Frame(s.top,bg=PANEL);s.right.grid(row=0,column=1,sticky='nsew',padx=12,pady=12);s.right.columnconfigure(0,weight=1);s.right.rowconfigure(0,weight=1)
-        s.text=tk.Text(s.right,wrap='word',bg='#0b1119',fg=FG,relief='flat',font=('Segoe UI',12),padx=14,pady=12,height=10);s.text.grid(row=0,column=0,sticky='nsew')
-        s.res=tk.Label(s.right,bg=PANEL,fg=GREEN,font=('Segoe UI',10),justify='left',wraplength=560,anchor='w');s.res.grid(row=1,column=0,sticky='ew',pady=4)
-        s.opts=tk.Frame(s.right,bg=PANEL);s.opts.grid(row=2,column=0,sticky='ew')
+        s.right=tk.Frame(s.top,bg=PANEL);s.right.grid(row=0,column=1,sticky='nsew',padx=12,pady=12);s.right.columnconfigure(0,weight=1);s.right.rowconfigure(0,weight=1);s.right.rowconfigure(2,weight=1)
+        s.text=tk.Text(s.right,wrap='word',bg='#0b1119',fg=FG,relief='flat',font=('Segoe UI',12),padx=14,pady=12,height=2);s.text.grid(row=0,column=0,sticky='nsew')
+        text_bar=tk.Scrollbar(s.right,command=s.text.yview);text_bar.grid(row=0,column=1,sticky='ns');s.text.config(yscrollcommand=text_bar.set)
+        width,height=getattr(s.top,'_layout_size',(900,680));s.choice_wrap=ui_layout.text_wrap(width-290,32)
+        s.res_outer=tk.Frame(s.right,bg=PANEL);s.res_outer.grid(row=1,column=0,sticky='ew',pady=4)
+        results,s.res_body=ui_layout.scroll_frame(s.res_outer,PANEL,height=72);results.pack(fill='both',expand=True)
+        s.res=tk.Label(s.res_body,bg=PANEL,fg=GREEN,font=('Segoe UI',10),justify='left',wraplength=s.choice_wrap,anchor='w');s.res.pack(fill='x')
+        s.opts_outer=tk.Frame(s.right,bg=PANEL);s.opts_outer.grid(row=2,column=0,sticky='nsew')
+        scroll,s.opts=ui_layout.scroll_frame(s.opts_outer,PANEL,height=max(110,min(220,height//3)));scroll.pack(fill='both',expand=True)
+        s.top.bind('<Configure>',s.resize)
         s.boostrow=tk.Frame(s.right,bg=PANEL);s.boostrow.grid(row=3,column=0,sticky='ew',pady=4)
         s.smoke=tk.BooleanVar(value=False);s.focus=tk.BooleanVar(value=False)
         tk.Checkbutton(s.boostrow,text='Закурить перед проверкой (−1 сиг., +2)',variable=s.smoke,bg=PANEL,fg=MUTED,selectcolor=CARD,activebackground=PANEL,command=s.redraw).pack(anchor='w')
         tk.Checkbutton(s.boostrow,text='Собраться (−8 сил, +1)',variable=s.focus,bg=PANEL,fg=MUTED,selectcolor=CARD,activebackground=PANEL,command=s.redraw).pack(anchor='w')
         s.refs={};s.show('start')
+    def resize(s,e):
+        if e.widget is not s.top:return
+        s.choice_wrap=ui_layout.text_wrap(e.width-290,32)
+        s.res.config(wraplength=s.choice_wrap)
+        for child in s.opts.winfo_children():child.config(wraplength=s.choice_wrap)
+
     def bonus(s):
         b=0
         if s.smoke.get() and s.w.s['cig']>=1:b+=2
@@ -59,7 +71,7 @@ class EventWindow:
             b=s.btn(tag+ch['t'],lambda ch=ch:s.pick(ch),False)
             if not core.req_ok(w,ch.get('req',{})):b.config(state='disabled')
     def btn(s,t,fn,primary=False):
-        b=tk.Button(s.opts,text=t,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#24364a',relief='flat',bd=0,font=('Segoe UI',11,'bold'),padx=12,pady=9,anchor='w',justify='left',wraplength=560,cursor='hand2');b.pack(fill='x',pady=3);return b
+        b=tk.Button(s.opts,text=t,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#24364a',relief='flat',bd=0,font=('Segoe UI',11,'bold'),padx=12,pady=9,anchor='w',justify='left',wraplength=s.choice_wrap,cursor='hand2');b.pack(fill='x',pady=3);return b
     def pick(s,ch):
         if ch.get('game'):
             for x in s.opts.winfo_children():x.destroy()
@@ -97,9 +109,10 @@ class QuickGame:
           'cups':('Стаканчики','Запомни, где вещь. Выбери правильный стаканчик после перемешивания.')}
     def __init__(s,app,kind,cb,parent=None):
         s.a=app;s.kind=kind;s.cb=cb;s.done=False;s.after=None;s.prev=app.modal;app.modal=s
-        s.top=tk.Toplevel(app.root);s.top.title(s.DESC[kind][0]);s.top.geometry('720x440');s.top.configure(bg=PANEL);s.top.transient(parent or app.root);s.top.grab_set();s.top.protocol('WM_DELETE_WINDOW',lambda:None)
+        s.top=app.window(s.DESC[kind][0],720,440);s.top.transient(parent or app.root);s.top.grab_set();s.top.protocol('WM_DELETE_WINDOW',lambda:None)
+        s.track=min(640,max(300,getattr(s.top,'_layout_size',(720,440))[0]-80))
         tk.Label(s.top,text=s.DESC[kind][0],bg=PANEL,fg=GOLD,font=('Segoe UI',18,'bold')).pack(pady=(14,4))
-        s.info=tk.Label(s.top,text=s.DESC[kind][1],bg=PANEL,fg=FG,font=('Segoe UI',11),wraplength=660);s.info.pack(pady=4)
+        s.info=tk.Label(s.top,text=s.DESC[kind][1],bg=PANEL,fg=FG,font=('Segoe UI',11),wraplength=s.track);s.info.pack(pady=4)
         s.body=tk.Frame(s.top,bg=PANEL);s.body.pack(fill='both',expand=True,padx=16,pady=8)
         w=app.world;s.smoke=tk.BooleanVar(value=False);s.focus=tk.BooleanVar(value=False)
         s.pre=tk.Frame(s.body,bg=PANEL);s.pre.pack(pady=6)
@@ -134,7 +147,7 @@ class QuickGame:
             except tk.TclError:pass
         s.cb(ok)
     def g_timing(s):
-        s.c=tk.Canvas(s.body,width=640,height=90,bg='#0b1119',highlightthickness=0);s.c.pack(pady=14);s.x=20;s.dx=9;s.round=0;s.hits=0
+        s.c=tk.Canvas(s.body,width=s.track,height=90,bg='#0b1119',highlightthickness=0);s.c.pack(pady=14);s.x=20;s.dx=9;s.round=0;s.hits=0
         s.lab=tk.Label(s.body,text='',bg=PANEL,fg=FG,font=('Segoe UI',12));s.lab.pack()
         tk.Button(s.body,text='СТОП',command=s.stop,bg=GOLD,fg='#111821',relief='flat',font=('Segoe UI',14,'bold'),padx=30,pady=8).pack(pady=8);s.top.bind('<space>',lambda e:s.stop())
         s.newzone();s.tick()
@@ -144,7 +157,7 @@ class QuickGame:
         if s.done:return
         s.x+=s.dx
         if s.x>=620 or s.x<=20:s.dx=-s.dx
-        c=s.c;c.delete('all');c.create_rectangle(10,35,630,55,fill='#243449',outline='');c.create_rectangle(s.zone[0],28,s.zone[1],62,fill='#2f6b4a',outline=GREEN);c.create_rectangle(s.x-4,15,s.x+4,75,fill=GOLD,outline='')
+        c=s.c;c.delete('all');c.create_rectangle(10,35,630,55,fill='#243449',outline='');c.create_rectangle(s.zone[0],28,s.zone[1],62,fill='#2f6b4a',outline=GREEN);c.create_rectangle(s.x-4,15,s.x+4,75,fill=GOLD,outline='');c.scale('all',0,0,s.track/640,1)
         s.after=s.top.after(16,s.tick)
     def stop(s):
         if s.done:return
@@ -154,7 +167,7 @@ class QuickGame:
         s.dx=s.dx*1.12;s.newzone()
     def g_mash(s):
         s.need=max(8,int(34*(1-s.boost)));s.n=0;s.t=6.0
-        s.c=tk.Canvas(s.body,width=640,height=40,bg='#0b1119',highlightthickness=0);s.c.pack(pady=14)
+        s.c=tk.Canvas(s.body,width=s.track,height=40,bg='#0b1119',highlightthickness=0);s.c.pack(pady=14)
         s.lab=tk.Label(s.body,text='',bg=PANEL,fg=FG,font=('Segoe UI',12));s.lab.pack()
         tk.Button(s.body,text='ЖМИ!',command=s.hit,bg=GOLD,fg='#111821',relief='flat',font=('Segoe UI',20,'bold'),padx=60,pady=14).pack(pady=8);s.top.bind('<space>',lambda e:s.hit());s.mtick()
     def hit(s):
@@ -163,7 +176,7 @@ class QuickGame:
         if s.n>=s.need:s.end(True)
     def mtick(s):
         if s.done:return
-        s.t-=.05;s.c.delete('all');s.c.create_rectangle(0,0,640*min(1,s.n/s.need),40,fill=GOLD,outline='');s.lab.config(text='Нажатий %d/%d · осталось %.1f с'%(s.n,s.need,max(0,s.t)))
+        s.t-=.05;s.c.delete('all');s.c.create_rectangle(0,0,s.track*min(1,s.n/s.need),40,fill=GOLD,outline='');s.lab.config(text='Нажатий %d/%d · осталось %.1f с'%(s.n,s.need,max(0,s.t)))
         if s.t<=0:return s.end(False)
         s.after=s.top.after(50,s.mtick)
     def g_cups(s):

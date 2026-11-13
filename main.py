@@ -8,7 +8,7 @@ from fightui import FightWindow
 from minigames import Mini
 from sound import Sound
 import ai
-import core,meta
+import core,meta,ui_layout
 from menu import Menu
 from gfx import open_rgb
 from uikit import Tutorial
@@ -34,31 +34,41 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Календарь и снаряжение v20');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Масштабирование и проверка v21')
+  screen=ui_layout.screen_size(root);width,height=ui_layout.main_size(screen);self._window_width=width
+  root.geometry(f'{width}x{height}');root.minsize(min(960,width),min(640,height));root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
   try:st.theme_use('clam')
   except tk.TclError:pass
   st.configure('Dark.TCombobox',fieldbackground=CARD,background=CARD,foreground=FG,arrowcolor=GOLD,padding=7);st.map('Dark.TCombobox',fieldbackground=[('readonly',CARD)],foreground=[('readonly',FG)])
-  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save() if not self.mentor else None);root.bind('<Escape>',lambda e:None if self.mentor else (self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
+  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.bind('<Configure>',lambda e:self.reflow_header(e.width) if e.widget is root else None,add='+');root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save() if not self.mentor else None);root.bind('<Escape>',lambda e:None if self.mentor else (self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
  def label(self,parent,text='',size=11,bold=False,color=None,**kw):return tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color or FG,font=('Segoe UI',size,'bold' if bold else 'normal'),**kw)
- def button(self,parent,text,fn,primary=False):return tk.Button(parent,text=text,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',activeforeground='#111821' if primary else FG,relief='flat',bd=0,font=('Segoe UI',10,'bold'),padx=12,pady=8,cursor='hand2')
+ def button(self,parent,text,fn,primary=False):return tk.Button(parent,text=text,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',activeforeground='#111821' if primary else FG,relief='flat',bd=0,font=('Segoe UI',10,'bold'),padx=12,pady=8,wraplength=min(450,ui_layout.text_wrap(self._window_width,180)),justify='left',cursor='hand2')
  def window(self,title,w=900,h=650):
-  p=tk.Toplevel(self.root);p.title(title);p.geometry(f'{w}x{h}');p.configure(bg=PANEL);return p
+  width,height=ui_layout.window_size(w,h,ui_layout.screen_size(self.root))
+  p=tk.Toplevel(self.root);p.title(title);p.geometry(f'{width}x{height}');p.configure(bg=PANEL);p._layout_size=(width,height);return p
+ def scroll_panel(self,parent,bg=PANEL):
+  outer,body=ui_layout.scroll_frame(parent,bg);outer.pack(fill='both',expand=True);return body
  def build_header(self):
-  f=tk.Frame(self.root,bg=BG);f.grid(row=0,column=0,sticky='ew',padx=12,pady=(8,2));f.columnconfigure(3,weight=1)
+  f=self.header=tk.Frame(self.root,bg=BG);f.grid(row=0,column=0,sticky='ew',padx=12,pady=(8,2));f.columnconfigure(3,weight=1)
   self.title=self.hint=self.modebutton=self.coverbtn=self.caste_lbl=_Null();self.navbuttons={}
   self.menubtn=self.button(f,'☰',lambda:self.menu.show());self.menubtn.grid(row=0,column=0,padx=(0,6))
   self.mapbtn=self.button(f,'Карта · M',self.toggle_map,True);self.mapbtn.grid(row=0,column=1,padx=3)
   self.clock=self.label(f,size=13,bold=True,color=GOLD);self.clock.grid(row=0,column=2,sticky='w',padx=14)
   self.hud=self.label(f,size=11,color=MUTED);self.hud.grid(row=0,column=4,sticky='e')
+ def reflow_header(self,width):
+  self._window_width=max(1,int(width))
+  compact=width<1100 or self.settings.get('ui_scale',1)>1.25
+  self.hud.grid(row=1 if compact else 0,column=0 if compact else 4,columnspan=5 if compact else 1,sticky='w' if compact else 'e')
  def build_nav(self):pass
  def build_scene(self):
   f=self.scene=tk.Frame(self.root,bg=PANEL);f.grid(row=1,column=0,sticky='nsew',padx=12,pady=(2,8));f.columnconfigure(0,weight=1);f.rowconfigure(0,weight=1)
-  self.canvas=tk.Canvas(f,bg='#070b10',highlightthickness=0);self.canvas.grid(row=0,column=0,sticky='nsew',padx=4,pady=4);self.canvas.bind('<Configure>',lambda e:self.draw());self.canvas.bind('<Motion>',self.motion);self.canvas.bind('<Button-1>',self.click);self.map=MapView(self,f);self.map.c.grid(row=0,column=0,sticky='nsew',padx=4,pady=4);self.map.c.grid_remove()
+  self.canvas=tk.Canvas(f,bg='#070b10',highlightthickness=0);self.canvas.grid(row=0,column=0,sticky='nsew',padx=4,pady=4);self.canvas.bind('<Configure>',lambda e:(self.status_l.config(wraplength=ui_layout.text_wrap(e.width,28)),self.draw()));self.canvas.bind('<Motion>',self.motion);self.canvas.bind('<Button-1>',self.click);self.map=MapView(self,f);self.map.c.grid(row=0,column=0,sticky='nsew',padx=4,pady=4);self.map.c.grid_remove()
   self.notice=tk.Frame(f,bg='#17232c');self.notice.grid(row=1,column=0,sticky='ew',padx=4,pady=2);self.notice.grid_remove()
   self.actrow=tk.Frame(f,bg=PANEL);self.actrow.grid(row=2,column=0,sticky='ew',padx=4,pady=2)
+  self.actrow.bind('<Configure>',lambda e:self.render_cards() if self.has_game and getattr(self,'_card_columns',None)!=min(len(self.acts),ui_layout.card_count(e.width)) else None)
   self.chat=row=tk.Frame(f,bg=PANEL);row.grid(row=3,column=0,sticky='ew',padx=6,pady=4);row.columnconfigure(1,weight=1)
   self.who=self.label(row,size=12,bold=True);self.who.grid(row=0,column=0,sticky='w',padx=(0,12));self.npcbox=ttk.Combobox(row,state='readonly',style='Dark.TCombobox',width=22);self.npcbox.grid(row=1,column=0,sticky='ew',padx=(0,12));self.npcbox.bind('<<ComboboxSelected>>',lambda e:self.pick_npc());self.relation=self.label(row,size=9,color=MUTED);self.relation.grid(row=2,column=0,sticky='w')
   self.entry=tk.Text(row,height=2,wrap='word',bg=CARD,fg=FG,insertbackground=GOLD,font=('Segoe UI',12),relief='flat',padx=12,pady=8);self.entry.grid(row=0,column=1,rowspan=3,sticky='ew',padx=(0,10));self.entry.bind('<Return>',self.enter);self.entry.bind('<Shift-Return>',self.newline);self.entry.bind('<Control-Return>',self.enter);self.entry.bind('<Escape>',lambda e:(self.close_chat(True) if not self.mentor else None,'break')[1])
@@ -101,7 +111,7 @@ class App:
   except Exception:pass
   try:self.sound.set_volume(s['volume']);self.sound.set_music(s['music'])
   except Exception:pass
-  self.cache.clear();self.env_cache.clear()
+  self.cache.clear();self.env_cache.clear();self.reflow_header(self._window_width)
   if hasattr(self,'coverbtn'):self.coverbtn.config(text='Фон: заполнить' if self.cover else 'Фон: целиком')
   if hasattr(self,'map'):self.map.cache.clear()
   if getattr(self,'menu',None):self.menu.cache.clear()
@@ -334,7 +344,7 @@ class App:
   if id not in {key for key,_,_ in self.env_shapes}:return
   title,meaning,action=hotspots16.LORE[id];win=self.window('Окружение · '+title,520,305);self.env_window=win
   win.transient(self.root);win.grab_set()
-  box=tk.Frame(win,bg=PANEL);box.pack(fill='both',expand=True,padx=22,pady=16)
+  box=self.scroll_panel(win)
   self.label(box,title,16,True,color=GOLD).pack(anchor='w',pady=(0,8))
   self.label(box,meaning,11,wraplength=450,justify='left').pack(anchor='w',pady=(0,10))
   owner={'tower':'polkan','pots':'hleb','shower':'kip','shelves':'cenz'}.get(id)
@@ -350,7 +360,7 @@ class App:
    except ValueError as e:self.status.config(text=str(e))
   win.protocol('WM_DELETE_WINDOW',close)
   row=tk.Frame(box,bg=PANEL);row.pack(side='bottom',fill='x',pady=8)
-  self.button(row,('Лечь до утра' if id in ('bed','cot','bunks') and core.is_night(self.world) else action),use,True).pack(side='left',padx=4)
+  self.button(row,('Лечь до утра' if id in ('bed','cot','bunks') and core.is_night(self.world) else action),use,True).pack(fill='x',pady=2)
   if id=='stage':
    import jubilee19
    r=jubilee19.state(self.world)
@@ -376,7 +386,7 @@ class App:
       text=note17.find(self.world);self.persist();self.refresh();self.status.config(text=text)
      except ValueError as e:self.status.config(text=str(e))
     self.button(row,'Проверить край матраса',search).pack(side='left',padx=4)
-  self.button(row,'Назад',close).pack(side='right',padx=4)
+  self.button(row,'Назад',close).pack(anchor='e',pady=2)
  def refresh(self):
   s=self.world.s;rep=self.world.reputation(self.npc or 'zub')['public_respect'];t=core.tier(self.world)[0];c=core.C(self.world)
   self.hud.config(text=f"♥ {s['hp']}   ⚡ {s['stamina']}   ● {s['cig']}   ₽ {s['rub']}   ·   {t}")
@@ -399,8 +409,8 @@ class App:
   except Exception:pass
  def render_cards(self):
   for w in self.actrow.winfo_children():w.destroy()
-  self.acts=core.activities(self.world);n=len(self.acts)
-  for i,a in enumerate(self.acts):
+  self.acts=core.activities(self.world);n=min(len(self.acts),ui_layout.card_count(self.actrow.winfo_width()));self._card_columns=n
+  for i,a in enumerate(self.acts[:n]):
    self.actrow.columnconfigure(i,weight=1);key='ic_'+a['icon']
    if key not in self.cardrefs:self.cardrefs[key]=ImageTk.PhotoImage(Image.open(BASE/f"assets/icon_{a['icon']}.png").convert('RGBA').resize((22,22)))
    off=a['off'];txt=a['title']+('\n'+off if off else (f"\n{a['min']} мин" if a['min'] else ''))
@@ -408,6 +418,9 @@ class App:
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
   for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
+  if len(self.acts)>n:
+   m.add_separator()
+   for a in self.acts[n:]:m.add_command(label=a['title']+(' · '+a['off'] if a['off'] else ''),command=lambda id=a['id']:self.do_activity(id))
   mb.config(menu=m);mb.grid(row=0,column=n,padx=(6,0));self.morebtn=mb
  def card_key(self,i):
   if 1<=i<=len(self.acts):self.do_activity(self.acts[i-1]['id'])
@@ -452,7 +465,7 @@ class App:
   except ValueError as e:self.status.config(text=str(e))
  def stash_window(self):
   if self.blocked():return
-  w=self.world;L=w.s['loc'];win=self.window('Схрон · '+NAMES[L],620,470);box=tk.Frame(win,bg=PANEL);box.pack(fill='both',expand=True,padx=14,pady=10)
+  w=self.world;L=w.s['loc'];win=self.window('Схрон · '+NAMES[L],620,470);box=self.scroll_panel(win)
   def draw():
    for x in box.winfo_children():x.destroy()
    st=core.stash_get(w,L);inv=core.C(w)['inv']
@@ -470,11 +483,12 @@ class App:
     have=w.s['cig'] if it=='cig' else inv.get(it,0);r=tk.Frame(box,bg=PANEL);r.pack(fill='x',pady=3)
     pic=self.item_icon(it,30)
     if pic:tk.Label(r,image=pic,bg=PANEL).pack(side='left',padx=3)
-    self.label(r,'%s · при себе %d · в схроне %d'%(name,have,st.get(it,0)),11).pack(side='left')
+    self.label(r,'%s · при себе %d · в схроне %d'%(name,have,st.get(it,0)),11,wraplength=ui_layout.text_wrap(getattr(win,'_layout_size',(620,470))[0],75),justify='left').pack(side='left')
     def mv(it=it,put=True):
      try:core.stash_move(w,L,it,1,put);self.persist();self.refresh();draw()
      except ValueError as e:self.status.config(text=str(e))
-    self.button(r,'Взять',lambda it=it:mv(it,False)).pack(side='right',padx=3);self.button(r,'Спрятать',lambda it=it:mv(it,True)).pack(side='right',padx=3)
+    controls=tk.Frame(box,bg=PANEL);controls.pack(anchor='w')
+    self.button(controls,'Взять',lambda it=it:mv(it,False)).pack(side='left',padx=3);self.button(controls,'Спрятать',lambda it=it:mv(it,True)).pack(side='left',padx=3)
    self.label(box,'При шмоне забирают заточки и мобильники, что при вас. Спрятанное шмон не находит.',9,color=MUTED).pack(anchor='w',pady=10)
   draw()
  def profile_window(self):
@@ -483,11 +497,12 @@ class App:
   import profile
   win=self.window('Личное дело',880,710)
   outer=tk.Frame(win,bg=PANEL);outer.pack(fill='both',expand=True,padx=14,pady=14)
-  left=tk.Frame(outer,bg=PANEL);left.pack(side='left',anchor='n',padx=(0,14))
+  left_outer,left=ui_layout.scroll_frame(outer,PANEL);left_outer.pack(side='left',fill='y',padx=(0,14))
   path=BASE/'assets/player.jpg'
   if not path.is_file():path=BASE/'assets/player_avatar.png'  # старые пользовательские сборки
   try:
-   image=Image.open(path).convert('RGB');image=ImageOps.fit(image,(235,370),method=Image.Resampling.LANCZOS,centering=(.5,.22))
+   width=max(140,min(235,getattr(win,'_layout_size',(880,710))[0]//3-25))
+   image=Image.open(path).convert('RGB');image=ImageOps.fit(image,(width,round(width*370/235)),method=Image.Resampling.LANCZOS,centering=(.5,.22))
    win.portrait_ref=ImageTk.PhotoImage(image);tk.Label(left,image=win.portrait_ref,bg=PANEL).pack()
   except (OSError,ValueError):self.label(left,'Портрет не найден',11).pack()
   self.label(left,'ВЫ · '+profile.nickname(self.world),12,True,color=GOLD,wraplength=240).pack(pady=12)
@@ -533,7 +548,7 @@ class App:
   pending=[o for o in self.world.s['notices'] if o['status']=='pending' and o['npc'] in self.world.witnesses()]
   if not pending:self.notice.grid_remove();return
   self.notice.grid()
-  o=pending[0];self.label(self.notice,self.npcs[o['npc']]['name']+' · '+o['action'],10,True,color=GOLD).pack(anchor='w',padx=10,pady=(7,2));self.label(self.notice,o['reply'],10,wraplength=1200,justify='left').pack(fill='x',padx=10);row=tk.Frame(self.notice,bg='#17232c');row.pack(fill='x',padx=8,pady=6);self.button(row,'Ответить / принять',lambda:self.resolve(o['id'],True),True).pack(side='left',padx=3);self.button(row,'Позже',lambda:self.resolve(o['id'],False)).pack(side='left',padx=3)
+  o=pending[0];self.label(self.notice,self.npcs[o['npc']]['name']+' · '+o['action'],10,True,color=GOLD).pack(anchor='w',padx=10,pady=(7,2));self.label(self.notice,o['reply'],10,wraplength=ui_layout.text_wrap(self._window_width,65),justify='left').pack(fill='x',padx=10);row=tk.Frame(self.notice,bg='#17232c');row.pack(fill='x',padx=8,pady=6);self.button(row,'Ответить / принять',lambda:self.resolve(o['id'],True),True).pack(side='left',padx=3);self.button(row,'Позже',lambda:self.resolve(o['id'],False)).pack(side='left',padx=3)
  def resolve(self,id,accept):
   if self.blocked():return
   o=next(x for x in self.world.s['notices'] if x['id']==id)
@@ -562,7 +577,7 @@ class App:
  def residents(self):self.text_window('Местные жители','\n\n'.join(NAMES[i]+': '+', '.join(n['name'] for n in self.npcs.values() if n['home']==i) for i in range(12)))
  def decisions(self):
   if self.blocked() or not self.npc:return
-  k=self.npc;w=self.window('Решения · '+self.npcs[k]['name'],680,720)
+  k=self.npc;w=self.window('Решения · '+self.npcs[k]['name'],680,720);body=self.scroll_panel(w)
   def do(fn):
    try:
     fn()
@@ -572,38 +587,38 @@ class App:
    except ValueError as e:messagebox.showinfo('Решение',str(e))
   import calendar20
   if k in ('cal','zv'):
-   self.button(w,'Совместное дело · '+('памятные даты' if k=='cal' else 'ремонт вещей'),lambda:do(lambda:calendar20.collaboration(self.world,k))).pack(fill='x',padx=15,pady=4)
+   self.button(body,'Совместное дело · '+('памятные даты' if k=='cal' else 'ремонт вещей'),lambda:do(lambda:calendar20.collaboration(self.world,k))).pack(fill='x',padx=15,pady=4)
   if k in calendar20.BIRTHDAYS and any(t=='birthday' and key==k for t,key,_ in calendar20.today_events(self.world)):
    for title,choice in [('Поздравить с днём рождения','greet'),('Подарить сигарету на день рождения','gift')]:
-    self.button(w,title,lambda choice=choice:do(lambda:calendar20.celebrate(self.world,'birthday',k,choice))).pack(fill='x',padx=15,pady=4)
+    self.button(body,title,lambda choice=choice:do(lambda:calendar20.celebrate(self.world,'birthday',k,choice))).pack(fill='x',padx=15,pady=4)
   import jubilee19,jubilee20
   if k in jubilee19.state(self.world)['invited'] and jubilee19.state(self.world)['rehearsed'] and k not in jubilee20.state(self.world)['decisions'] and not jubilee20.state(self.world)['held']:
    for label,yes in [('Согласиться участвовать в юбилейном вечере',True),('Отказаться от юбилейного вечера',False)]:
-    self.button(w,label,lambda yes=yes:do(lambda:jubilee20.consent(self.world,k,yes))).pack(fill='x',padx=15,pady=3)
+    self.button(body,label,lambda yes=yes:do(lambda:jubilee20.consent(self.world,k,yes))).pack(fill='x',padx=15,pady=3)
   if k in jubilee19.GUESTS and jubilee19.state(self.world)['theme'] is not None and k not in jubilee19.state(self.world)['invited']:
-   self.button(w,'Пригласить обсудить юбилейный вечер',lambda:do(lambda:jubilee19.invite(self.world,k))).pack(fill='x',padx=15,pady=4)
+   self.button(body,'Пригласить обсудить юбилейный вечер',lambda:do(lambda:jubilee19.invite(self.world,k))).pack(fill='x',padx=15,pady=4)
   import route18
   if k=='cenz' and route18.eligible(self.world) and route18.state(self.world)['route'] is None:
    for title,choice in [('Узнать порядок письма, не называя Шкета','anonymous'),('Спросить прямо о письме Шкета','open')]:
-    self.button(w,title,lambda choice=choice:do(lambda:route18.inquire(self.world,choice))).pack(fill='x',padx=15,pady=4)
+    self.button(body,title,lambda choice=choice:do(lambda:route18.inquire(self.world,choice))).pack(fill='x',padx=15,pady=4)
   if k=='kol' and route18.eligible(self.world) and route18.state(self.world)['route'] is not None:
    r=route18.state(self.world)
    if not r['told']:
-    self.button(w,'Рассказать Шкету, что нужно для письма',lambda:do(lambda:route18.tell(self.world,'explain'))).pack(fill='x',padx=15,pady=4)
+    self.button(body,'Рассказать Шкету, что нужно для письма',lambda:do(lambda:route18.tell(self.world,'explain'))).pack(fill='x',padx=15,pady=4)
    if not r['offered']:
-    self.button(w,'Предложить Шкету чистый лист',lambda:do(lambda:route18.tell(self.world,'offer'))).pack(fill='x',padx=15,pady=4)
+    self.button(body,'Предложить Шкету чистый лист',lambda:do(lambda:route18.tell(self.world,'offer'))).pack(fill='x',padx=15,pady=4)
   if k=='kol':
    import note17
    if note17.held(self.world) and note17.state(self.world).get('given_day') is None:
     for title,choice in [('Показать чужую записку Шкету','show'),('Передать чужую записку Шкету','give')]:
-     self.button(w,title,lambda choice=choice:do(lambda:note17.act(self.world,choice))).pack(fill='x',padx=15,pady=4)
-  for t,kind in [('Помочь · 2 сигареты','help'),('Украсть · +15₽, NPC заметит','theft'),('Сдать охране · +25₽','betrayal')]:self.button(w,t,lambda kind=kind:do(lambda:self.world.decision(k,kind))).pack(fill='x',padx=15,pady=4)
+     self.button(body,title,lambda choice=choice:do(lambda:note17.act(self.world,choice))).pack(fill='x',padx=15,pady=4)
+  for t,kind in [('Помочь · 2 сигареты','help'),('Украсть · +15₽, NPC заметит','theft'),('Сдать охране · +25₽','betrayal')]:self.button(body,t,lambda kind=kind:do(lambda:self.world.decision(k,kind))).pack(fill='x',padx=15,pady=4)
   def companion():self.world.s['companion']=k
-  self.button(w,'Назначить напарником (прикроет рядом при отношении +40)',lambda:do(companion)).pack(fill='x',padx=15,pady=4);self.button(w,'Занять 10₽ до завтра',lambda:do(lambda:self.world.borrow(k))).pack(fill='x',padx=15,pady=4);self.button(w,'Вернуть долг',lambda:do(lambda:self.world.repay(k))).pack(fill='x',padx=15,pady=4)
+  self.button(body,'Назначить напарником (прикроет рядом при отношении +40)',lambda:do(companion)).pack(fill='x',padx=15,pady=4);self.button(body,'Занять 10₽ до завтра',lambda:do(lambda:self.world.borrow(k))).pack(fill='x',padx=15,pady=4);self.button(body,'Вернуть долг',lambda:do(lambda:self.world.repay(k))).pack(fill='x',padx=15,pady=4)
   def deny():
    pop=self.window('Оспорить слух',750,500)
    for g in self.world.heard(k):self.button(pop,g['claim'][:100],lambda id=g['id']:(do(lambda:self.world.deny(k,id)),pop.destroy())).pack(fill='x',padx=10,pady=3)
-  self.button(w,'Оспорить услышанный NPC слух',deny).pack(fill='x',padx=15,pady=4)
+  self.button(body,'Оспорить услышанный NPC слух',deny).pack(fill='x',padx=15,pady=4)
  def item_icon(self,kind,size=48):
   """Cache each game asset for Tk widgets; never lose PhotoImage references."""
   key=('item13',kind,size)
@@ -620,7 +635,7 @@ class App:
   events=calendar20.today_events(self.world)
   if not events:self.label(win,'Сегодня обычный день. Ближайшие праздники видны в руководстве.',11).pack(anchor='w',padx=20)
   for kind,key,text in events:
-   self.label(win,(key if kind=='holiday' else text)+' · '+(text if kind=='holiday' else 'найдите именинника в его локации'),11,wraplength=620,justify='left').pack(anchor='w',padx=20,pady=4)
+   self.label(win,(key if kind=='holiday' else text)+' · '+(text if kind=='holiday' else 'найдите именинника в его локации'),11,wraplength=ui_layout.text_wrap(getattr(win,'_layout_size',(680,460))[0],50),justify='left').pack(anchor='w',padx=20,pady=4)
    if kind=='holiday':
     for title,choice in [('Присоединиться · внутриигровой ящик','join'),('Побыть рядом · +5 сил','observe')]:
      def choose(choice=choice,key=key):
@@ -633,7 +648,8 @@ class App:
  def wardrobe(self):
   if self.blocked():return
   import gear20
-  win=self.window('Коллекция снаряжения',840,860);box=tk.Frame(win,bg=PANEL);box.pack(fill='both',expand=True,padx=16,pady=10)
+  win=self.window('Коллекция снаряжения',840,860);box=self.scroll_panel(win)
+  content_width=getattr(win,'_layout_size',(840,860))[0]
   def draw():
    for child in box.winfo_children():child.destroy()
    r=gear20.state(self.world)
@@ -653,7 +669,7 @@ class App:
     name,rarity,slot,dmg,armor,crit=gear20.ITEMS[item];row=tk.Frame(box,bg=PANEL);row.pack(fill='x',pady=1)
     effect=('урон '+str(16+dmg+lv) if slot=='weapon' else 'броня +'+str(armor+lv) if slot=='armor' else 'шанс крит. +%.1f%%'%((crit+lv*.01)*20))
     cost=' · улучшение: %d дет., %d ₽'%(lv+1,8*(lv+1)) if lv<3 else ' · улучшено до предела'
-    self.label(row,f'{gear20.RARITIES[rarity][0]} · {name} +{lv} · {effect}{cost}',10).pack(side='left',fill='x',expand=True)
+    self.label(row,f'{gear20.RARITIES[rarity][0]} · {name} +{lv} · {effect}{cost}',10,wraplength=max(160,content_width-int(300*self.settings['ui_scale'])-70),justify='left').pack(side='left',fill='x',expand=True)
     self.button(row,'Надеть',lambda item=item:apply(lambda:gear20.equip(self.world,item))).pack(side='right',padx=2)
     self.button(row,'Улучшить',lambda item=item:apply(lambda:gear20.upgrade(self.world,item))).pack(side='right',padx=2)
   draw()
@@ -662,7 +678,7 @@ class App:
   if self.blocked():return
   import equipment13
   w=self.window('Мастерская · оружие и тренировка',780,690)
-  box=tk.Frame(w,bg=PANEL);box.pack(fill='both',expand=True,padx=24,pady=16)
+  box=self.scroll_panel(w)
   def draw():
    for child in box.winfo_children():child.destroy()
    st=equipment13.stats(self.world);levels=equipment13.levels(self.world)

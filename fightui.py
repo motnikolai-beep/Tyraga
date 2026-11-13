@@ -6,6 +6,7 @@ import fight as F
 from fight import FightEngine,MOVES,PARTS,PART_NAME,W_ARENA,GROUND
 import bosscard
 from gfx import open_rgb
+import ui_layout
 from world import NAMES
 BG='#05080c';PANEL='#101720';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';RED='#c45867';GREEN='#6fcf97'
 H_ARENA=470
@@ -85,20 +86,23 @@ class FightWindow:
         s.a=app;s.k=k;s.eng=FightEngine(app.world,k,ambush);app.battle=s.eng;app.battle_window=s
         s.name=app.npcs[k]['name'];s.closed=False;s.paused=False;s.last=time.monotonic();s.now=0.0;s.over_t=0.0;s.help_t=9.0;s.sparks=[];s.texts=[];s.shake=0.0;s.trail=[];s.combo_txt=('',0.0);s.retreat_armed=0.0;s.held=set();s.refs={}
         s.top=app.window('Бой · '+s.name,W_ARENA+24,H_ARENA+24);s.top.configure(bg=BG);s.top.transient(app.root);s.top.grab_set();s.top.protocol('WM_DELETE_WINDOW',s.try_close)
-        s.c=tk.Canvas(s.top,width=W_ARENA,height=H_ARENA,bg=BG,highlightthickness=0);s.c.pack(padx=12,pady=12)
+        width,height=getattr(s.top,'_layout_size',(W_ARENA+24,H_ARENA+24))
+        vw,vh,s.scale=ui_layout.fight_viewport(width,height,(W_ARENA,H_ARENA))
+        s.viewport=(vw,vh)
+        s.c=tk.Canvas(s.top,width=vw,height=vh,bg=BG,highlightthickness=0);s.c.pack(padx=12,pady=12)
         s.top.bind('<KeyPress>',s.on_down);s.top.bind('<KeyRelease>',s.on_up);s.c.bind('<Button-1>',lambda e:s.on_click())
         try:s.top.focus_force()
         except Exception:pass
         s._bg()
         import equipment13
         item=equipment13.weapon(app.world)
-        try:s.refs['weapon']=ImageTk.PhotoImage(Image.open(app.base/'assets/items'/(item+'.png')).resize((39,39),Image.Resampling.LANCZOS))
+        try:s.refs['weapon']=ImageTk.PhotoImage(Image.open(app.base/'assets/items'/(item+'.png')).resize((max(20,round(39*s.scale)),)*2,Image.Resampling.LANCZOS))
         except OSError:s.refs['weapon']=None
         s.tick()
     def _bg(s):
         scene=None
         try:
-            loc=s.a.world.s['loc'];scene=ImageOps.fit(open_rgb(s.a.base/('assets/loc_%d.jpg'%loc),(W_ARENA,H_ARENA)),(W_ARENA,H_ARENA));im=ImageEnhance.Brightness(scene).enhance(.32*s.a.settings.get('brightness',1.0));s.refs['bg']=ImageTk.PhotoImage(im)
+            loc=s.a.world.s['loc'];scene=ImageOps.fit(open_rgb(s.a.base/('assets/loc_%d.jpg'%loc),(W_ARENA,H_ARENA)),(W_ARENA,H_ARENA));im=ImageEnhance.Brightness(scene).enhance(.32*s.a.settings.get('brightness',1.0));s.refs['bg']=ImageTk.PhotoImage(im.resize(s.viewport,Image.Resampling.LANCZOS))
         except Exception:s.refs['bg']=None
         # Боссовая заставка (стоп-кадр с именем и подписью) на время вступления; у остальных — обычная надпись.
         s.refs['intro']=None
@@ -106,10 +110,10 @@ class FightWindow:
             npc=s.a.npcs[s.k]
             # Заставка — у босса при власти и у бывшего, который пришёл за реваншем (у него своя плашка и подпись).
             if s.eng.revenge:npc=dict(npc,card_tag='РЕВАНШ',tagline='Пришёл за своим. Второй попытки не будет.')
-            if s.eng.boss:s.refs['intro']=ImageTk.PhotoImage(bosscard.render(s.a.base,npc,NAMES[npc['home']],(W_ARENA,H_ARENA),scene));s.eng.intro=max(s.eng.intro,bosscard.INTRO_SECONDS)
+            if s.eng.boss:s.refs['intro']=ImageTk.PhotoImage(bosscard.render(s.a.base,npc,NAMES[npc['home']],(W_ARENA,H_ARENA),scene).resize(s.viewport,Image.Resampling.LANCZOS));s.eng.intro=max(s.eng.intro,bosscard.INTRO_SECONDS)
         except Exception:s.refs['intro']=None
         try:
-            im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[s.k]['portrait'])).convert('RGB');im=ImageOps.fit(im,(44,44),centering=(.5,.2));s.refs['pe']=ImageTk.PhotoImage(im)
+            im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[s.k]['portrait'])).convert('RGB');im=ImageOps.fit(im,(max(20,round(44*s.scale)),)*2,centering=(.5,.2));s.refs['pe']=ImageTk.PhotoImage(im)
         except Exception:s.refs['pe']=None
     def on_down(s,e):
         n=key_name(e)
@@ -198,6 +202,7 @@ class FightWindow:
             c.create_rectangle(0,0,W_ARENA,H_ARENA,fill='#05080c',stipple='gray50',outline='');c.create_text(W_ARENA/2,200,text='ПАУЗА',fill=GOLD,font=('Segoe UI',34,'bold'));c.create_text(W_ARENA/2,250,text='Esc — продолжить   ·   Q Q — отступить',fill=FG,font=('Segoe UI',12))
         if s.help_t>0:c.create_text(W_ARENA/2,H_ARENA-30,text=s.HELP,fill='#9fb2c6',font=('Segoe UI',9),width=W_ARENA-40,justify='center')
         elif e.phase=='fight':c.create_text(W_ARENA-10,H_ARENA-10,anchor='se',text='H — управление',fill='#3e5368',font=('Segoe UI',9))
+        ui_layout.scale_canvas(c,s.scale)
     def fighter(s,f,ox,oy):
         c=s.c;sk=skeleton(f,s.now);flash=f.flash>0;base='#e9eef4' if f.kind=='player' else F_COL(s.k)
         def limb_color(p):

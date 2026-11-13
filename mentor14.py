@@ -137,7 +137,10 @@ class MentorTour:
             import core
             boss=next((k for k in a.npcs if a.npcs[k]['boss'] and core.in_power(a.world,k)),None)
             text+=(' Первый действующий хозяин: '+a.npcs[boss]['name']+'.' if boss else ' Сейчас действующих хозяев не осталось.')
-        tk.Label(card,text=text,fg=FG,bg=PANEL,font=('Segoe UI',10),wraplength=280,justify='left',anchor='nw').place(x=13,y=122,width=284,height=171)
+        body=tk.Text(card,fg=FG,bg=PANEL,font=('Segoe UI',10),wrap='word',relief='flat',bd=0,highlightthickness=0,cursor='arrow')
+        body.place(x=13,y=122,width=284,height=171);body.insert('1.0',text);body.config(state='disabled')
+        # Full training copy stays reachable at large font sizes via the text scrollbar.
+        bar=tk.Scrollbar(card,command=body.yview);bar.place(x=296,y=122,width=12,height=171);body.config(yscrollcommand=bar.set)
         if mode=='read':tk.Button(card,text='Дальше ▶',command=self.next,bg=GOLD,fg=INK,relief='flat').place(x=13,y=300,width=110,height=26)
         else:tk.Label(card,text='☝ Нажми на подсвеченное',fg=GOLD,bg=PANEL,font=('Segoe UI',9,'bold')).place(x=13,y=301)
         tk.Button(card,text='Отключить' if self.index<2 else 'Пропустить',command=self.skip,bg='#28374a',fg=FG,relief='flat').place(x=200,y=300,width=98,height=26)
