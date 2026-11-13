@@ -443,6 +443,8 @@ def journal(w):
     out.append(('Следы мест',hotspots16.journal(w)))
     import note17
     out.append(('Чужая записка',note17.journal(w)))
+    import route18
+    if route18.eligible(w):out.append(('Почтовый вопрос Шкета',route18.journal(w)))
     out.append(('Судьбы хозяев',boss15.journal(w)))
     import former
     out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))

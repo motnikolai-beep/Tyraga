@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Чужая записка v17');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Почтовый вопрос v18');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
@@ -552,6 +552,16 @@ class App:
     social.arrival(self.world)
     self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
+  import route18
+  if k=='cenz' and route18.eligible(self.world) and route18.state(self.world)['route'] is None:
+   for title,choice in [('Узнать порядок письма, не называя Шкета','anonymous'),('Спросить прямо о письме Шкета','open')]:
+    self.button(w,title,lambda choice=choice:do(lambda:route18.inquire(self.world,choice))).pack(fill='x',padx=15,pady=4)
+  if k=='kol' and route18.eligible(self.world) and route18.state(self.world)['route'] is not None:
+   r=route18.state(self.world)
+   if not r['told']:
+    self.button(w,'Рассказать Шкету, что нужно для письма',lambda:do(lambda:route18.tell(self.world,'explain'))).pack(fill='x',padx=15,pady=4)
+   if not r['offered']:
+    self.button(w,'Предложить Шкету чистый лист',lambda:do(lambda:route18.tell(self.world,'offer'))).pack(fill='x',padx=15,pady=4)
   if k=='kol':
    import note17
    if note17.held(self.world) and note17.state(self.world).get('given_day') is None:
