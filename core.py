@@ -149,6 +149,9 @@ def apply(w,fx):
             c['pending'].insert(0,{'t':'scene','id':'shmon','protected':True})
         elif k=='counter':
             for n_,d_ in v.items():c['counters'][n_]=c['counters'].get(n_,0)+d_
+        elif k=='thread22':
+            import thread22
+            out+=thread22.choose(w,*v)
         elif k in('peace','mock','revenge_off','duel','duel_ambush'):
             import former  # бывшие боссы: мир, обида, отказ от реванша, бой за место
             if k=='peace':out+=former.peace(w,v)
@@ -196,6 +199,8 @@ def sleep(w,force=False):
     former.morning(w)
     import zone_news
     zone_news.morning(w)
+    import thread22
+    thread22.morning(w)
     import calendar20
     calendar20.notice(w)
 
@@ -439,6 +444,8 @@ def journal(w):
     import social,zone_news
     out.append(('Свои и чужие',social.journal(w)))
     out.append(('Слухи зоны',zone_news.journal(w)))
+    import thread22
+    out.append(('Чужая строка',thread22.journal(w)))
     import life15,boss15
     out.append(('Повседневная жизнь',life15.journal(w)))
     import hotspots16

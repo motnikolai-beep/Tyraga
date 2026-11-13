@@ -57,6 +57,15 @@ class T(unittest.TestCase):
         for sid,sc in SCENES.items():
             for _ in range(20):
                 w=mk();w.s['cig']=50;w.s['rub']=200;node='start';n=0
+                if 'thread22' in sc['trig']:
+                    # Generic scene-fuzzer starts with a fresh world; supply the
+                    # story's time/location here. Actual progression has its own tests.
+                    import thread22
+                    stage=sc['trig']['thread22'];r=thread22.state(w)
+                    r['stage']=stage;r['days']={'intro':3,'evidence':4,'meeting':5}
+                    r['evidence']=sc['trig'].get('thread22_branch',False)
+                    loc,start,_=thread22.STAGES[stage];w.s.update(loc=loc,day=6)
+                    core.C(w)['abs']=6*1440+start
                 while node and n<10:
                     chs=sc['nodes'][node]['ch']
                     if not chs:break

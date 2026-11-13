@@ -319,10 +319,13 @@ S('boss_aftermath',{
   ch('Сохранять скромность',R('«Он не зазнался», — шепчутся по углам.',{'rep':2,'karma':{'honor':2}})))
 },title='Падение босса')
 
-def _ok(w,tr):
+def _ok(w,tr,loc=None):
     from core import C
     c=C(w);s=w.s
     if s['day']<tr.get('day',0):return False
+    if 'thread22' in tr:
+        import thread22
+        if not thread22.ready(w,tr['thread22'],tr.get('thread22_branch'),loc=loc):return False
     if tr.get('note17_followup'):
         import note17
         if not note17.followup_ready(w):return False
@@ -352,9 +355,10 @@ def available(w,loc=None):
         if not sc['story'] or sid in c['done']:continue
         tr=sc['trig']
         if 'loc' in tr and tr['loc']!=L:continue
-        if _ok(w,tr):yield sid
+        if _ok(w,tr,loc=L):yield sid
 
 import story20  # v20: новые жители клуба и мастерской
 import story17  # v17: заметка у койки и последствия
 import story15  # v15: три дня письма и быт
 import story10  # v10: события дня, реакции на касту, дела, слабости, скрытые концовки
+import story22  # optional: local rumour, verification, and delayed consequences

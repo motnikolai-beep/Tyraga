@@ -85,11 +85,21 @@ class Smoke(unittest.TestCase):
    try:
     app=main.App(Widget());app.new_game('normal');app.menu.hide();app.base=b;r=random.Random(2)
     for sid in SCENES:
-     app.world.s['cig']=30;app.world.s['rub']=100;ev=uikit.EventWindow(app,sid,{'slot':'Обед'});self.assertIs(app.modal,ev)
+     app.world.s['cig']=30;app.world.s['rub']=100
+     sc=SCENES[sid]
+     if 'thread22' in sc['trig']:
+      import thread22
+      stage=sc['trig']['thread22'];state=thread22.state(app.world)
+      state['stage']=stage;state['days']={'intro':3,'evidence':4,'meeting':5}
+      state['evidence']=sc['trig'].get('thread22_branch',False)
+      loc,start,_=thread22.STAGES[stage];app.world.s.update(loc=loc,day=6)
+      core.C(app.world)['abs']=6*1440+start
+     ev=uikit.EventWindow(app,sid,{'slot':'Обед'});self.assertIs(app.modal,ev)
      for _ in range(12):
       chs=[c for c in ev.cur['ch'] if core.req_ok(app.world,c.get('req',{}))]
       if not chs:break
       ev.pick(r.choice(chs));g=ev.opts.children[-1].props.get('command') if ev.opts.children else None
+      if 'thread22' in sc['trig']:break  # only one choice per timed chapter
       if not g or ev.done:break
       g()
      if not ev.done:ev.finish()

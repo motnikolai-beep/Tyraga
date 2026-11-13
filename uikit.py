@@ -97,10 +97,14 @@ class EventWindow:
     def finish(s):
         if s.done:return
         s.done=True;had=core.C(s.w).get('ending');core.finish_scene(s.w,s.sid);core.log_scene(s.w,s.sid);s.a.modal=None
+        # Another available story at this location (including a timed chapter)
+        # should not require leaving and returning just to enter the queue.
+        if s.sc['story']:core.story_check(s.w)
         try:s.top.grab_release();s.top.destroy()
         except tk.TclError:pass
         s.a.persist();s.a.refresh();s.a.propagate()
         if core.C(s.w).get('ending') and not had:s.a.status.config(text='Концовка пройдена. Песочница продолжается: можно играть дальше.');s.a.root.after(300,s.a.show_stats)
+        s.a.root.after(0,s.a.pump)
         s.a.root.after(0,s.a.maybe_tutorial)
 
 class QuickGame:
