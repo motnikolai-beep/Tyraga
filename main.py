@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Наставник v14');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Письмо и судьбы v15');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
@@ -349,6 +349,11 @@ class App:
   if self.view=='map':self.show_scene()
   if sid.startswith('meal'):self.sound.play('horn')
   elif sid in('shmon','extort','brawl'):self.sound.play('clang')
+  if sid.startswith('life15_letter'):
+   import profile,life15
+   vars={**(vars or {}),'case':profile.origin(self.world)[0],
+         'letter_intro':life15.letter_intro(self.world),
+         'letter_end_intro':life15.letter_end_intro(self.world)}
   EventWindow(self,sid,vars)
  def do_activity(self,id):
   if self.blocked():return self.status.config(text='Сначала завершите текущее действие.')
@@ -369,6 +374,9 @@ class App:
     c['temple_day']=w.s['day']
    core.advance(w,a['min']);cn=core.C(w)['counters'];cn[id]=cn.get(id,0)+1
    if id in('work_shift','gym','shiv_craft'):w.event('work' if id=='work_shift' else 'activity','Игрок: '+a['title'],w.witnesses())
+   if id=='work_shift':
+    import life15
+    life15.work(w)
    self.propagate();self.persist();self.refresh();self.open_scene(core.scene_for(w,id))
   except ValueError as e:self.status.config(text=str(e))
  def stash_window(self):

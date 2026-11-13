@@ -323,6 +323,10 @@ def _ok(w,tr):
     from core import C
     c=C(w);s=w.s
     if s['day']<tr.get('day',0):return False
+    if 'life_days' in tr:
+        r=c.get('life15',{}).get('letters',{})
+        if not r.get('start_day') or s['day']<r['start_day']+tr['life_days']:return False
+        if tr.get('life_after_middle') and s['day']<=r.get('middle_day',s['day']):return False
     if 'after' in tr and any(a not in c['done'] for a in tr['after']):return False
     if 'flag' in tr and not c['flags'].get(tr['flag']):return False
     if 'noflag' in tr and c['flags'].get(tr['noflag']):return False
@@ -347,4 +351,5 @@ def available(w,loc=None):
         if 'loc' in tr and tr['loc']!=L:continue
         if _ok(w,tr):yield sid
 
+import story15  # v15: три дня письма и быт
 import story10  # v10: события дня, реакции на касту, дела, слабости, скрытые концовки

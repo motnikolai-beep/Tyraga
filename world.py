@@ -45,7 +45,7 @@ class World:
   return {'public_respect':round(public,1),'earned':r['earned'],'prisoners_average':round(mean,1),'karma':round(karma,1),'personal':personal,'score':round(score,1),'authority':k not in PRISONERS}
  def context(self,k):
   s=self.s
-  return {'npc':self.npcs[k],'location':NAMES[self.npcs[k]['home']],'day':s['day'],'relationship':s['relations'].get(k,0),'respect':self.reputation(k),'known_facts':self.known(k)[-6:],'heard_rumors':[{'id':g['id'],'from':('лично слышал от игрока' if g['from']==k and g['hops']==0 else self.npcs[g['from']]['name']),'claim':g['claim'],'confidence':g['confidence'],'hops':g['hops'],'verified':False,'disputed':g.get('disputed',False)} for g in self.heard(k)[-4:]],'already_discussed_rumors':s['npc_state'][k]['discussed_gossip'][-15:],'obligations':[o for o in s['obligations'] if o['npc']==k and o['status']=='active'],'memory':s['memory'].get(k,[])[-5:],'lore':lore.npc_lore(self,k),'npc_relations':__import__('zone_news').npc_relations(self,k),'player':{**__import__('profile').ai_context(self),'тон':lore.TIER_TONE[core.tier(self)[0]],'caste':core.tier(self)[0],'caste_score':core.C(self)['caste'],'time':core.hhmm(self)+' '+core.phase(self),'defeated_bosses':[self.npcs[x]['name'] for x in core.C(self)['ousted']]}}
+  return {'npc':self.npcs[k],'location':NAMES[self.npcs[k]['home']],'day':s['day'],'relationship':s['relations'].get(k,0),'respect':self.reputation(k),'known_facts':self.known(k)[-6:],'heard_rumors':[{'id':g['id'],'from':('лично слышал от игрока' if g['from']==k and g['hops']==0 else self.npcs[g['from']]['name']),'claim':g['claim'],'confidence':g['confidence'],'hops':g['hops'],'verified':False,'disputed':g.get('disputed',False)} for g in self.heard(k)[-4:]],'already_discussed_rumors':s['npc_state'][k]['discussed_gossip'][-15:],'obligations':[o for o in s['obligations'] if o['npc']==k and o['status']=='active'],'memory':s['memory'].get(k,[])[-5:],'lore':lore.npc_lore(self,k),'npc_relations':__import__('zone_news').npc_relations(self,k),'опыт_заключения':__import__('life15').context(self,k),'мотивы_хозяина':__import__('boss15').context(self,k),'player':{**__import__('profile').ai_context(self),'тон':lore.TIER_TONE[core.tier(self)[0]],'caste':core.tier(self)[0],'caste_score':core.C(self)['caste'],'time':core.hhmm(self)+' '+core.phase(self),'defeated_bosses':[self.npcs[x]['name'] for x in core.C(self)['ousted']]}}
  def conversation_event(self,k,text,reply,private=False):
   s=self.s;loc=self.npcs[k]['home'];listeners=[] if private else [i for i,n in self.npcs.items() if n['home']==loc and i!=k]
   e={'id':uuid.uuid4().hex,'kind':'speech','day':s['day'],'turn':s['turn'],'text':text[:1600],'addressed_to':k,'npc_reply':reply[:900],'private':private,'observers':listeners};s['events'].append(e);s['events']=s['events'][-300:]
@@ -77,6 +77,8 @@ class World:
   self.s['loc']=loc;self.s['turn']+=1
  def work(self):
   self.spend();s=self.s;s['rub']+=8;s['cig']+=2;s['food']=max(0,s['food']-4);s['stamina']=max(0,s['stamina']-8);self.event('work','Игрок отработал смену в '+NAMES[s['loc']]+'.',self.witnesses())
+  import life15
+  life15.work(self)
  def eat(self):
   if self.s['cig']<2:raise ValueError('Нужны 2 сигареты')
   s=self.s;s['cig']-=2;s['food']=min(100,s['food']+25);s['stamina']=min(s['stamina_max'],s['stamina']+12);s['turn']+=1;self.event('meal','Игрок поел.',self.witnesses())
@@ -90,7 +92,10 @@ class World:
   if kind=='help':s['cig']-=2;delta=6;text='Игрок отдал '+self.npcs[k]['name']+' две сигареты.'
   elif kind=='theft':s['rub']+=15;delta=-20;text=self.npcs[k]['name']+' поймал игрока на краже 15 рублей.'
   else:s['rub']+=25;delta=-25;text='Игрок сдал '+self.npcs[k]['name']+' охране. NPC достоверно узнал об этом.'
-  s['relations'][k]=clamp(s['relations'].get(k,0)+delta);self.event(kind,text,self.witnesses());core.add_caste(self,{'help':3,'theft':-5,'betrayal':-15}[kind],{'help':'помощь','theft':'кража','betrayal':'донос'}[kind])
+  s['relations'][k]=clamp(s['relations'].get(k,0)+delta);self.event(kind,text,self.witnesses())
+  import life15
+  life15.observe(self,k,kind)
+  core.add_caste(self,{'help':3,'theft':-5,'betrayal':-15}[kind],{'help':'помощь','theft':'кража','betrayal':'донос'}[kind])
  def buy(self,kind):
   import equipment13
   return equipment13.buy(self,kind)

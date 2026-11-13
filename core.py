@@ -119,6 +119,12 @@ def apply(w,fx):
         elif k=='smax':s['stamina_max']=min(140,s['stamina_max']+v);out.append('Макс. силы %+d'%v)
         elif k=='dig':s['dig']=min(6,s['dig']+v);out.append('Подкоп %+d'%v)
         elif k=='gear':s['gear'].update(v);out.append('Снаряжение обновлено')
+        elif k=='life_letter':
+            import life15
+            out+=life15.letter(w,v)
+        elif k=='life_routine':
+            import life15
+            out+=life15.routine(w,v)
         elif k=='cleanse':
             n=0
             for d in s['karma']:
@@ -186,6 +192,7 @@ def sleep(w,force=False):
     c['abs']=day_start;w.s['ap']=99
     if force:w.s['stamina']=int(w.s['stamina_max']*.6);w.s['hp']=max(1,w.s['hp']-8)
     c['flags'].pop('storm_tonight',None);c['flags'].pop('letter_today',None);c['pending'].append({'t':'scene','id':'morning'});schedule_day(w)
+    if w.s['day']>=2:c['pending'].append({'t':'scene','id':'life15_round'})
     former.morning(w)
     import zone_news
     zone_news.morning(w)
@@ -347,6 +354,7 @@ def req_ok(w,req):
     for k,v in req.items():
         if k=='cig' and s['cig']<v:return False
         if k=='rub' and s['rub']<v:return False
+        if k=='food' and s['food']<v:return False
         if k=='dig' and s['dig']<v:return False
         if k=='caste' and c['caste']<v:return False
         if k.startswith('item_') and c['inv'].get(k[5:],0)<v:return False
@@ -357,7 +365,7 @@ def req_ok(w,req):
     return True
 
 def req_text(req):
-    n={'cig':'сиг.','rub':'₽','dig':'участков подкопа','caste':'каста'}
+    n={'cig':'сиг.','rub':'₽','food':'сытости','dig':'участков подкопа','caste':'каста'}
     return ', '.join('друг рядом (+40)' if k=='friend' else 'известная слабость' if k=='weak' else '%s %s'%(v,n.get(k,k.replace('item_',''))) for k,v in req.items())
 
 def resolve_choice(w,choice,game_ok=None,bonus=0,rng=None):
@@ -429,6 +437,9 @@ def journal(w):
     import social,zone_news
     out.append(('Свои и чужие',social.journal(w)))
     out.append(('Слухи зоны',zone_news.journal(w)))
+    import life15,boss15
+    out.append(('Повседневная жизнь',life15.journal(w)))
+    out.append(('Судьбы хозяев',boss15.journal(w)))
     import former
     out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))
     f=c['flags'];pl=[]

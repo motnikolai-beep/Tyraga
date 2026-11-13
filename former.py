@@ -149,12 +149,16 @@ def peace(w,k):
     r['peace']=True;r['will']=False
     if r.get('revenge') in('due','fight'):r['revenge']='off'
     cn=core.C(w)['counters'];cn['ex_peace']=cn.get('ex_peace',0)+1
+    import life15
+    life15.bond(w,k,trust=8,fear=-3)
     return ['Помирились: %s'%w.npcs[k]['name']]
 def mock(w,k,days=2):
     """Унижение или побои после падения: бывший затаил обиду, реванш будет скоро."""
     r=rec(w,k)
     if not r or r.get('revenge') is not None:return []  # реванш уже идёт, был или отменён насовсем
     r['peace']=False;r['mock']=True;r['will']=True;r['at']=min(r['at'],w.s['day']+days)
+    import life15
+    life15.bond(w,k,trust=-10,fear=8)
     return ['%s %s обиду'%(w.npcs[k]['name'],cast.g(k,'затаил','затаила'))]
 def off(w,k):
     r=rec(w,k)
