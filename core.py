@@ -447,6 +447,8 @@ def journal(w):
     import social,zone_news
     out.append(('Свои и чужие',social.journal(w)))
     out.append(('Слухи зоны',zone_news.journal(w)))
+    import knowledge24
+    out.append(('Кто что знает',knowledge24.rows(w)))
     import thread22
     out.append(('Чужая строка',thread22.journal(w)))
     import follow23

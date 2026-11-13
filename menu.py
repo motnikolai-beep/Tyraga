@@ -74,7 +74,7 @@ class Menu:
         return b
     # ---- экраны ----
     def screen_main(s):
-        a=s.a;s.title('ТЮРЯГА',40);s.note('После слуха · v23',MUTED,11)
+        a=s.a;s.title('ТЮРЯГА',40);s.note('Кто что знает · v24',MUTED,11)
         if a.has_game:s.note('Текущая игра: день %d · %s · %s'%(a.world.s['day'],core.hhmm(a.world),core.diff(a.world)['name']),GOLD,10)
         if a.has_game:s.btn('▶  Продолжить',s.hide,True)
         s.btn('Новая игра',lambda:s.go('new'),not a.has_game)

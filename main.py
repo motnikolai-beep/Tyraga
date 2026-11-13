@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · После слуха v23')
+  self.root=root;root.title('Тюряга · Кто что знает v24')
   screen=ui_layout.screen_size(root);width,height=ui_layout.main_size(screen);self._window_width=width
   root.geometry(f'{width}x{height}');root.minsize(min(960,width),min(640,height));root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
@@ -146,6 +146,10 @@ class App:
   if not self.has_game:return
   t='\n\n'.join('■ '+h+'\n'+'\n'.join('  • '+x for x in rows) for h,rows in core.journal(self.world))
   self.text_window('Задания и дела',t)
+ def knowledge_window(self):
+  if self.has_game:
+   import knowledge24
+   self.text_window('Кто что знает',knowledge24.report(self.world))
  def show_stats(self):
   if self.has_game:self.menu.show('stats')
  def maybe_tutorial(self,force=False):
@@ -254,6 +258,8 @@ class App:
  def select(self,k):
   if self.blocked() or k not in self.world.witnesses():return
   self.npc=k;self.npcbox.current(self.local_ids.index(k));self.refresh();self.open_chat()
+  import knowledge24
+  if knowledge24.offer(self.world,k):self.status.config(text=self.npcs[k]['name']+' хочет обсудить недавнее событие. Откройте ⋯ → Решения.')
  def toggle_map(self):
   if self.view=='scene':self.view='map';self.canvas.grid_remove();self.map.c.grid();self.map.draw();self.mapbtn.config(text='К сцене · M')
   else:self.show_scene()
@@ -417,7 +423,7 @@ class App:
    b=tk.Button(self.actrow,text=txt,image=self.cardrefs[key],compound='left',command=lambda id=a['id']:self.do_activity(id),bg='#1d2b3c' if not off else '#121a24',fg=FG if not off else MUTED,activebackground='#2c4058',relief='flat',bd=0,font=('Segoe UI',9,'bold'),padx=8,pady=4,cursor='hand2' if not off else 'arrow',wraplength=150,justify='left')
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
-  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
+  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Кто что знает',self.knowledge_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
   if len(self.acts)>n:
    m.add_separator()
    for a in self.acts[n:]:m.add_command(label=a['title']+(' · '+a['off'] if a['off'] else ''),command=lambda id=a['id']:self.do_activity(id))
@@ -585,6 +591,24 @@ class App:
     social.arrival(self.world)
     self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
+  import knowledge24
+  item=knowledge24.offer(self.world,k)
+  if item:
+   def reaction():
+    pop=self.window('Разговор после события · '+self.npcs[k]['name'],660,390)
+    pop.protocol('WM_DELETE_WINDOW',pop.destroy)
+    panel=self.scroll_panel(pop)
+    self.label(panel,knowledge24.prompt(self.world,k,item),11,wraplength=ui_layout.text_wrap(pop._layout_size[0],48),justify='left').pack(anchor='w',padx=12,pady=10)
+    self.label(panel,'Источник: '+item['source']+'. Пересказ не равен доказательству.',10,color=MUTED,wraplength=ui_layout.text_wrap(pop._layout_size[0],48)).pack(anchor='w',padx=12)
+    def answer(choice):
+     try:
+      text=knowledge24.respond(self.world,k,item['id'],choice)
+      self.persist();self.refresh();pop.destroy();w.destroy()
+      self.text_window('Разговор после события',text)
+     except ValueError as e:messagebox.showinfo('Разговор',str(e))
+    for title,choice in [('Выслушать','listen'),('Уточнить, что видел сам','clarify'),('Завершить разговор','leave')]:
+     self.button(panel,title,lambda choice=choice:answer(choice)).pack(fill='x',padx=12,pady=4)
+   self.button(body,'Обсудить: '+item['topic'],reaction).pack(fill='x',padx=15,pady=4)
   import calendar20
   if k in ('cal','zv'):
    self.button(body,'Совместное дело · '+('памятные даты' if k=='cal' else 'ремонт вещей'),lambda:do(lambda:calendar20.collaboration(self.world,k))).pack(fill='x',padx=15,pady=4)
