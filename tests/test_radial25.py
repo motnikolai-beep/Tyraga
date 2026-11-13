@@ -7,7 +7,7 @@ from test_ui_stub import Widget
 from radial25 import sector,geometry,DialogueWheel,actions
 
 class Nearby:
- def __init__(self):self.local=['zub']
+ def __init__(self):self.local=['zub'];self.npcs={'zub':{'name':'Зуб'}};self.s={'events':[],'knowledge':{},'gossip':[]}
  def witnesses(self):return self.local
 
 class Game:
@@ -51,7 +51,24 @@ class WheelTests(unittest.TestCase):
     app.open_wheel();self.assertIsNotNone(app.wheel);self.assertTrue(app.blocked())
     previous=app.wheel;app.open_wheel();self.assertIs(app.wheel,previous)
     previous.choose(1);self.assertIsNone(app.wheel)
-    app.open_wheel();self.assertIsNotNone(app.wheel);app.close();self.assertIsNone(app.wheel)
+    # A witnessed allowed event adds a direct, two-level conversation, without a remote-NPC shortcut.
+    event=app.world.event('help','Помог', ['zub']);app.open_wheel()
+    wheel=app.wheel;self.assertEqual(wheel.items[-1][0],'react')
+    wheel.choose(4);self.assertEqual(wheel.reaction,event['id'])
+    self.assertIn(app.npcs['zub']['name'],wheel.preview.props['text'])
+    wheel.back();self.assertIsNone(wheel.reaction)
+    self.assertIsNotNone(__import__('knowledge24').offer(app.world,'zub'))
+    wheel.choose(4);wheel.choose(1)
+    self.assertIsNone(app.wheel);self.assertIsNone(__import__('knowledge24').offer(app.world,'zub'))
+    self.assertEqual(__import__('knowledge24').state(app.world)['seen']['zub'],[event['id']])
+    app.open_wheel();self.assertEqual(len(app.wheel.items),4)
+    app.wheel.close()
+    another=app.world.event('help','Новая помощь', ['zub']);app.open_wheel()
+    pending=app.wheel;pending.choose(4)
+    app.world.s['loc']=1  # stale target cannot be acted on even with an open modal
+    pending.choose(0);self.assertIsNone(app.wheel)
+    self.assertNotIn(another['id'],__import__('knowledge24').state(app.world)['seen']['zub'])
+    app.close();self.assertIsNone(app.wheel)
    finally:main.BASE=original
  def test_mouse_keys_close_and_no_stale_npc(self):
   app=Game();wheel=DialogueWheel(app,'zub');app.wheel=wheel

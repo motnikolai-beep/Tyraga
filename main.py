@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Колесо диалогов v25')
+  self.root=root;root.title('Тюряга · Личные ответы v26')
   screen=ui_layout.screen_size(root);width,height=ui_layout.main_size(screen);self._window_width=width
   root.geometry(f'{width}x{height}');root.minsize(min(960,width),min(640,height));root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
@@ -100,6 +100,13 @@ class App:
   if not self.npc or self.npc not in self.world.witnesses():self.select_default()
   from radial25 import DialogueWheel
   self.wheel=DialogueWheel(self,self.npc)
+ def wheel_reaction(self,k,event_id,choice):
+  """Apply a chosen local reply through the same evidence rules as Решения."""
+  if self.blocked() or not self.has_game or self.npc!=k or k not in self.world.witnesses():return
+  import knowledge24
+  try:text=knowledge24.respond(self.world,k,event_id,choice)
+  except ValueError as e:return messagebox.showinfo('Разговор',str(e))
+  self.persist();self.refresh();self.text_window('Разговор после события',text)
  def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor or self.env_window or self.wheel)
  def persist(self):
   if not self.has_game:return

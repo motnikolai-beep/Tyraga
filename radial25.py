@@ -28,46 +28,77 @@ def geometry(width,height):
 def actions(app,k):
     """Only actual nearby, currently possible actions; no fabricated dialog choices."""
     if k not in app.world.witnesses():return []
-    return [('talk','Говорить',app.open_chat),
-            ('decide','Решения',app.decisions),
-            ('knowledge','Кто что знает',app.knowledge_window),
-            ('history','История беседы',app.show_history)]
+    import knowledge24
+    out=[('talk','Говорить',app.open_chat),
+         ('decide','Решения',app.decisions),
+         ('knowledge','Кто что знает',app.knowledge_window),
+         ('history','История беседы',app.show_history)]
+    if knowledge24.offer(app.world,k):out.append(('react','Обсудить событие',None))
+    return out
 
 
 class DialogueWheel:
     def __init__(self,app,k):
         import tkinter as tk
-        self.tk=tk;self.app=app;self.k=k;self.items=actions(app,k);self.selected=0;self.closed=False
+        self.tk=tk;self.app=app;self.k=k;self.items=actions(app,k);self.selected=0;self.closed=False;self.reaction=None
         if not self.items:raise ValueError('В этой локации нет выбранного собеседника')
         self.top=app.window('Колесо диалога · '+app.npcs[k]['name'],700,620)
         self.top.transient(app.root);self.top.protocol('WM_DELETE_WINDOW',self.close)
         self.top.configure(bg=BG)
         width,height=self.top._layout_size
-        tk.Label(self.top,text=app.npcs[k]['name']+' · выберите действие',bg=BG,fg=GOLD,font=('Segoe UI',13,'bold'),
-                 wraplength=max(200,width-40)).pack(side='top',pady=6)
-        footer=tk.Frame(self.top,bg=BG);footer.pack(side='bottom',fill='x',padx=8,pady=(2,8))
-        for i,(_,title,_) in enumerate(self.items):
-            tk.Button(footer,text=f'{i+1} · {title}',command=lambda i=i:self.choose(i),
-                      bg=CARD,fg=FG,relief='flat',font=('Segoe UI',9),
-                      wraplength=max(65,(width-32)//len(self.items)-16),padx=3,pady=5).grid(row=0,column=i,sticky='nsew',padx=2)
-            footer.columnconfigure(i,weight=1)
+        self.heading=tk.Label(self.top,text=app.npcs[k]['name']+' · выберите действие',bg=BG,fg=GOLD,font=('Segoe UI',13,'bold'),
+                 wraplength=max(200,width-40))
+        self.heading.pack(side='top',pady=6)
+        self.preview=tk.Label(self.top,text='',bg=BG,fg=FG,font=('Segoe UI',10),
+                              wraplength=max(200,width-55),justify='left')
+        self.preview.pack(side='top',padx=20)
+        self.footer=tk.Frame(self.top,bg=BG);self.footer.pack(side='bottom',fill='x',padx=8,pady=(2,8))
+        self.render_footer(width)
         self.canvas=tk.Canvas(self.top,bg=BG,highlightthickness=0)
         self.canvas.pack(side='top',fill='both',expand=True)
         self.canvas.bind('<Configure>',lambda e:self.draw(e.width,e.height))
         self.canvas.bind('<Motion>',self.motion)
         self.canvas.bind('<Button-1>',self.click)
         self.canvas.bind('<Leave>',lambda e:self.highlight(None))
-        self.top.bind('<Escape>',lambda e:self.close())
+        self.top.bind('<Escape>',lambda e:self.back())
         self.top.bind('<Return>',lambda e:self.choose(self.selected))
         self.top.bind('<Left>',lambda e:self.rotate(-1))
         self.top.bind('<Right>',lambda e:self.rotate(1))
         self.top.bind('<Tab>',lambda e:(self.rotate(1),'break')[1])
-        for i in range(len(self.items)):
+        for i in range(9):
             self.top.bind(f'<Key-{i+1}>',lambda e,i=i:self.choose(i))
         self.top.grab_set()
         try:self.top.focus_force()
         except tk.TclError:pass
         self.draw(width,max(280,height-110))
+    def render_footer(self,width=None):
+        for child in self.footer.winfo_children():child.destroy()
+        width=width or self.top._layout_size[0]
+        for i,(_,title,_) in enumerate(self.items):
+            self.tk.Button(self.footer,text=f'{i+1} · {title}',command=lambda i=i:self.choose(i),
+                           bg=CARD,fg=FG,relief='flat',font=('Segoe UI',9),
+                           wraplength=max(65,(width-32)//len(self.items)-16),padx=3,pady=5).grid(row=0,column=i,sticky='nsew',padx=2)
+            self.footer.columnconfigure(i,weight=1)
+    def back(self):
+        if self.closed:return
+        if self.reaction is None:return self.close()
+        self.reaction=None;self.items=actions(self.app,self.k);self.selected=0
+        if not self.items:return self.close()
+        self.heading.configure(text=self.app.npcs[self.k]['name']+' · выберите действие')
+        self.preview.configure(text='')
+        self.render_footer();self.draw()
+    def open_reaction(self):
+        import knowledge24
+        item=knowledge24.offer(self.app.world,self.k)
+        if item is None:return self.back()
+        event_id=item['id'];self.reaction=event_id;self.selected=0
+        self.items=[('listen','Выслушать (+2)',lambda:self.app.wheel_reaction(self.k,event_id,'listen')),
+                    ('clarify','Уточнить источник (+1)',lambda:self.app.wheel_reaction(self.k,event_id,'clarify')),
+                    ('leave','Оборвать разговор (−1)',lambda:self.app.wheel_reaction(self.k,event_id,'leave'))]
+        self.preview.configure(text=knowledge24.prompt(self.app.world,self.k,item))
+        self.heading.configure(text=item['topic']+' · '+item['source']+' · выберите ответ',
+                               wraplength=max(200,self.top._layout_size[0]-40))
+        self.render_footer();self.draw()
     def draw(self,width=None,height=None):
         if self.closed:return
         c=self.canvas
@@ -95,15 +126,16 @@ class DialogueWheel:
     def click(self,event):
         cx,cy,outer,inner=self.geom
         index=sector(event.x,event.y,cx,cy,outer,inner,len(self.items))
-        if index is None:self.close()
+        if index is None:self.back()
         else:self.choose(index)
     def rotate(self,step):
         self.selected=((self.selected if self.selected is not None else 0)+step)%len(self.items)
         self.draw()
     def choose(self,index):
         if self.closed or not isinstance(index,int) or not 0<=index<len(self.items):return
-        action=self.items[index][2]
+        kind,_,action=self.items[index]
         if self.k not in self.app.world.witnesses() or self.app.npc!=self.k:return self.close()
+        if kind=='react':return self.open_reaction()
         self.close();action()
     def close(self):
         if self.closed:return
