@@ -114,6 +114,13 @@ class Travel(unittest.TestCase):
             self.assertEqual(panel.size,(600,380))
         with self.assertRaises(ValueError):comic_transition.render(ROOT,w,0,0)
 
+    def test_travel_copy_names_match_laundry_and_workshop(self):
+        w=mk()
+        self.assertIn(core.NAMES[6].lower(),comic_transition.copy(w,6,7)[0].lower())
+        self.assertIn(core.NAMES[7].lower(),comic_transition.copy(w,6,7)[1].lower())
+        self.assertIn(core.NAMES[7].lower(),comic_transition.copy(w,7,6)[0].lower())
+        self.assertIn(core.NAMES[6].lower(),comic_transition.copy(w,7,6)[1].lower())
+
     def test_past_is_factual_recent_local_event_not_foreign_news(self):
         w=mk();default,_=comic_transition.copy(w,0,1)
         self.assertNotIn('Только что:',default)
