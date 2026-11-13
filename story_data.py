@@ -323,6 +323,9 @@ def _ok(w,tr):
     from core import C
     c=C(w);s=w.s
     if s['day']<tr.get('day',0):return False
+    if tr.get('note17_followup'):
+        import note17
+        if not note17.followup_ready(w):return False
     if 'life_days' in tr:
         r=c.get('life15',{}).get('letters',{})
         if not r.get('start_day') or s['day']<r['start_day']+tr['life_days']:return False
@@ -351,5 +354,6 @@ def available(w,loc=None):
         if 'loc' in tr and tr['loc']!=L:continue
         if _ok(w,tr):yield sid
 
+import story17  # v17: заметка у койки и последствия
 import story15  # v15: три дня письма и быт
 import story10  # v10: события дня, реакции на касту, дела, слабости, скрытые концовки

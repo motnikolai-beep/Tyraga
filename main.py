@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Окружение ожило v16');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Чужая записка v17');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
@@ -351,6 +351,15 @@ class App:
   win.protocol('WM_DELETE_WINDOW',close)
   row=tk.Frame(box,bg=PANEL);row.pack(side='bottom',fill='x',pady=8)
   self.button(row,('Лечь до утра' if id in ('bed','cot','bunks') and core.is_night(self.world) else action),use,True).pack(side='left',padx=4)
+  if id=='bed':
+   import note17
+   if not note17.state(self.world)['found']:
+    def search():
+     close()
+     try:
+      text=note17.find(self.world);self.persist();self.refresh();self.status.config(text=text)
+     except ValueError as e:self.status.config(text=str(e))
+    self.button(row,'Проверить край матраса',search).pack(side='left',padx=4)
   self.button(row,'Назад',close).pack(side='right',padx=4)
  def refresh(self):
   s=self.world.s;rep=self.world.reputation(self.npc or 'zub')['public_respect'];t=core.tier(self.world)[0];c=core.C(self.world)
@@ -430,6 +439,15 @@ class App:
    for x in box.winfo_children():x.destroy()
    st=core.stash_get(w,L);inv=core.C(w)['inv']
    self.label(box,'Схрон в локации «%s»'%NAMES[L],12,True,color=GOLD).pack(anchor='w',pady=6)
+   import note17
+   if L==0 and note17.state(w)['found'] and note17.state(w).get('given_day') is None:
+    choice='take' if note17.hidden(w) else 'hide'
+    self.label(box,'Чужая записка · '+('в схроне' if choice=='take' else 'при себе'),11,color=GOLD).pack(anchor='w',pady=3)
+    def note_move():
+     try:
+      text=note17.act(w,choice);self.persist();self.refresh();draw();self.status.config(text=text)
+     except ValueError as e:self.status.config(text=str(e))
+    self.button(box,'Забрать записку' if choice=='take' else 'Спрятать записку',note_move).pack(anchor='w',pady=3)
    for it,name in [('cig','Сигареты'),('shiv','Заточка'),('phone','Мобильник'),('tea','Пачка чая')]:
     have=w.s['cig'] if it=='cig' else inv.get(it,0);r=tk.Frame(box,bg=PANEL);r.pack(fill='x',pady=3)
     pic=self.item_icon(it,30)
@@ -468,7 +486,7 @@ class App:
    if pic:tk.Label(row,image=pic,bg=PANEL).pack(side='left',padx=4)
    self.label(row,text,9,color=MUTED).pack(side='left')
   for item,count in core.C(self.world)['inv'].items():
-   if count and item in ('shiv','phone','tea','key','letter','parcel'):
+   if count and item in ('shiv','phone','tea','key','letter','parcel','note17'):
     row=tk.Frame(left,bg=PANEL);row.pack(fill='x',pady=2)
     pic=self.item_icon(item,30)
     if pic:tk.Label(row,image=pic,bg=PANEL).pack(side='left',padx=4)
@@ -534,6 +552,11 @@ class App:
     social.arrival(self.world)
     self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
+  if k=='kol':
+   import note17
+   if note17.held(self.world) and note17.state(self.world).get('given_day') is None:
+    for title,choice in [('Показать чужую записку Шкету','show'),('Передать чужую записку Шкету','give')]:
+     self.button(w,title,lambda choice=choice:do(lambda:note17.act(self.world,choice))).pack(fill='x',padx=15,pady=4)
   for t,kind in [('Помочь · 2 сигареты','help'),('Украсть · +15₽, NPC заметит','theft'),('Сдать охране · +25₽','betrayal')]:self.button(w,t,lambda kind=kind:do(lambda:self.world.decision(k,kind))).pack(fill='x',padx=15,pady=4)
   def companion():self.world.s['companion']=k
   self.button(w,'Назначить напарником (прикроет рядом при отношении +40)',lambda:do(companion)).pack(fill='x',padx=15,pady=4);self.button(w,'Занять 10₽ до завтра',lambda:do(lambda:self.world.borrow(k))).pack(fill='x',padx=15,pady=4);self.button(w,'Вернуть долг',lambda:do(lambda:self.world.repay(k))).pack(fill='x',padx=15,pady=4)
