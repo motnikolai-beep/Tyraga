@@ -9,8 +9,8 @@ from gfx import open_rgb
 from world import NAMES
 BG='#05080c';PANEL='#101720';FG='#e6edf4';MUTED='#8799ac';GOLD='#e5b767';RED='#c45867';GREEN='#6fcf97'
 H_ARENA=470
-VK={65:'left',68:'right',83:'crouch',37:'left',39:'right',40:'crouch',74:'jab',75:'hook',85:'lowkick',73:'highkick',76:'block',16:'block',79:'dodge',80:'roll',32:'roll',67:'smoke',81:'retreat',72:'help',27:'pause',13:'enter'}
-SYM={'a':'left','d':'right','s':'crouch','left':'left','right':'right','down':'crouch','j':'jab','k':'hook','u':'lowkick','i':'highkick','l':'block','shift_l':'block','o':'dodge','p':'roll','space':'roll','c':'smoke','q':'retreat','h':'help','escape':'pause','return':'enter',
+VK={65:'left',68:'right',83:'crouch',37:'left',39:'right',40:'crouch',74:'jab',75:'hook',85:'lowkick',73:'highkick',76:'block',16:'block',79:'dodge',80:'roll',32:'roll',67:'smoke',70:'lunge',81:'retreat',72:'help',27:'pause',13:'enter'}
+SYM={'a':'left','d':'right','s':'crouch','left':'left','right':'right','down':'crouch','j':'jab','k':'hook','u':'lowkick','i':'highkick','l':'block','shift_l':'block','o':'dodge','p':'roll','space':'roll','c':'smoke','f':'lunge','cyrillic_a':'lunge','q':'retreat','h':'help','escape':'pause','return':'enter',
  'cyrillic_ef':'left','cyrillic_ve':'right','cyrillic_yeru':'crouch','cyrillic_o':'jab','cyrillic_el':'hook','cyrillic_ghe':'lowkick','cyrillic_sha':'highkick','cyrillic_de':'block','cyrillic_shcha':'dodge','cyrillic_ze':'roll','cyrillic_es':'smoke','cyrillic_shorti':'retreat','cyrillic_er':'help'}
 ENEMY_COL={'zub':'#7a3f3f','graf':'#5f4d86','gvo':'#40633f','str':'#8a9098','sm':'#3b4252','gen':'#505068','mat':'#7a523d','cook':'#b9b9b0','kol':'#5d6a50','zina':'#8a4f6a','buh':'#4d4a42','serg':'#55603f','steam':'#6a7a86','prach':'#6a5d3f','polkan':'#5b6b3a','hleb':'#8a7f6a','kip':'#b5483c','cenz':'#3f6b55'}
 SK='#d1a883'
@@ -37,6 +37,7 @@ def pose(f,now):
         elif t<su+ac:e=lerp(w0,1.0,ease((t-su)/ac))
         else:e=1.0-ease((t-su-ac)/re)
         if f.move=='jab':p['af']=(lerp(52,92,e),lerp(150,92,e));p['lean']=10*e
+        elif f.move=='lunge':p['af']=(lerp(52,122,e),lerp(150,100,e));p['lean']=25*e;p['lf']=(lerp(20,54,e),lerp(6,36,e))
         elif f.move=='hook':p['af']=(lerp(52,112,e),lerp(150,108,e));p['ab']=(lerp(32,10,e),lerp(132,90,e));p['lean']=18*e
         elif f.move=='lowkick':p['lf']=(lerp(20,58,e),lerp(6,64,e));p['lean']=-6*e;p['lb']=(-22,-14)
         elif f.move=='highkick':p['lf']=(lerp(20,118,e),lerp(6,116,e));p['lean']=-24*e;p['af']=(lerp(52,20,e),lerp(150,60,e))
@@ -79,7 +80,7 @@ def skeleton(f,now,gy=GROUND):
 
 class FightWindow:
     HELP=('A/D — ходьба   S — присесть   J — быстрый удар   K — тяжёлый хук   U — быстрый пинок   I — тяжёлый пинок\n'
-          'L или Shift — блок (в момент удара = парирование)   O — уклон назад   Пробел/P — кувырок   C — сигарета (выносливость)   Q Q — отступить   Esc — пауза   H — подсказка')
+          'F — рывок (после тренировки удара, перезарядка 5 с)   L или Shift — блок (в момент удара = парирование)   O — уклон назад   Пробел/P — кувырок   C — сигарета (выносливость)   Q Q — отступить   Esc — пауза   H — подсказка')
     def __init__(s,app,k,ambush=False):
         s.a=app;s.k=k;s.eng=FightEngine(app.world,k,ambush);app.battle=s.eng;app.battle_window=s
         s.name=app.npcs[k]['name'];s.closed=False;s.paused=False;s.last=time.monotonic();s.now=0.0;s.over_t=0.0;s.help_t=9.0;s.sparks=[];s.texts=[];s.shake=0.0;s.trail=[];s.combo_txt=('',0.0);s.retreat_armed=0.0;s.held=set();s.refs={}
@@ -88,7 +89,12 @@ class FightWindow:
         s.top.bind('<KeyPress>',s.on_down);s.top.bind('<KeyRelease>',s.on_up);s.c.bind('<Button-1>',lambda e:s.on_click())
         try:s.top.focus_force()
         except Exception:pass
-        s._bg();s.tick()
+        s._bg()
+        import equipment13
+        item=equipment13.weapon(app.world)
+        try:s.refs['weapon']=ImageTk.PhotoImage(Image.open(app.base/'assets/items'/(item+'.png')).resize((39,39),Image.Resampling.LANCZOS))
+        except OSError:s.refs['weapon']=None
+        s.tick()
     def _bg(s):
         scene=None
         try:
@@ -244,6 +250,8 @@ class FightWindow:
             if flip:c.create_rectangle(x+w-sw,38,x+w,43,fill='#5aa0d8',outline='')
             else:c.create_rectangle(x,38,x+sw,43,fill='#5aa0d8',outline='')
             body(x+(w-70 if flip else 0),50,f)
+        if s.refs.get('weapon'):c.create_image(88,125,image=s.refs['weapon'])
+        if e.special_ready:c.create_text(113,160,text='F: рывок' if e.special_cd<=0 else 'F: %.1f с'%e.special_cd,fill=GOLD if e.special_cd<=0 else MUTED,font=('Segoe UI',10,'bold'))
         bar(14,380,e.p.frac(),'#6fcf97' if e.p.frac()>.35 else RED,False,'ВЫ',e.p)
         bar(W_ARENA-394,380,e.e.frac(),'#e5b767' if e.e.frac()>.35 else RED,True,s.name.upper(),e.e)
         c.create_text(W_ARENA/2,24,text=str(max(0,int(e.limit-e.time))),fill=MUTED,font=('Segoe UI',18,'bold'))

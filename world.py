@@ -18,7 +18,7 @@ class World:
   # Свергнутый босс никуда не девается: он остаётся в своей локации «бывшим» и всё видит, как остальные жители.
   return [k for k,n in self.npcs.items() if n['home']==self.s['loc']]
  def event(self,kind,text,witnesses=(),public=False):
-  s=self.s;ids=list(dict.fromkeys(k for k in witnesses if k in self.npcs));e={'id':uuid.uuid4().hex,'day':s['day'],'turn':s['turn'],'kind':kind,'text':text,'witnesses':ids,'public':public};s['events'].append(e);s['events']=s['events'][-300:]
+  s=self.s;ids=list(dict.fromkeys(k for k in witnesses if k in self.npcs));e={'id':uuid.uuid4().hex,'day':s['day'],'turn':s['turn'],'kind':kind,'text':text,'loc':s['loc'],'witnesses':ids,'public':public};s['events'].append(e);s['events']=s['events'][-300:]
   for k in ids:s['knowledge'].setdefault(k,[]).append({**e,'source':'очевидец','verified':True});s['knowledge'][k]=s['knowledge'][k][-100:]
   if kind=='zone_news':return e
   s['chron'].append({'day':s['day'],'real':text,'his':'Герой скромно трудился на благо зоны.' if kind not in ('theft','betrayal') else 'Мелкое недоразумение, не требующее проверки.'});s['chron']=s['chron'][-80:];return e
@@ -92,13 +92,8 @@ class World:
   else:s['rub']+=25;delta=-25;text='Игрок сдал '+self.npcs[k]['name']+' охране. NPC достоверно узнал об этом.'
   s['relations'][k]=clamp(s['relations'].get(k,0)+delta);self.event(kind,text,self.witnesses());core.add_caste(self,{'help':3,'theft':-5,'betrayal':-15}[kind],{'help':'помощь','theft':'кража','betrayal':'донос'}[kind])
  def buy(self,kind):
-  s=self.s;cost=core.price(self,{'knife':40,'armor':35,'heal':10}[kind])
-  if s['rub']<cost:raise ValueError('Недостаточно рублей')
-  s['rub']-=cost
-  if kind=='knife':s['gear'].update(weapon='Заточка',damage=24)
-  elif kind=='armor':s['gear']['armor']=7
-  else:s['hp']=min(100,s['hp']+35)
-  self.event('purchase','Покупка: '+kind,self.witnesses())
+  import equipment13
+  return equipment13.buy(self,kind)
  def borrow(self,k):
   if k not in self.witnesses():raise ValueError('NPC не рядом')
   s=self.s

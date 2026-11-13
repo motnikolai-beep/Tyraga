@@ -214,4 +214,28 @@ class SocialDossierUI(unittest.TestCase):
     self.assertFalse(core.C(app.world)['pending'])
    finally:main.BASE=original
 
+class ComicTravelUI(unittest.TestCase):
+ """Opening and skipping the loading screen must commit exactly one journey."""
+ def test_travel_overlay_blocks_input_then_commits_once(self):
+  import core
+  original=main.BASE
+  with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
+   try:
+    app=main.App(Widget());app.new_game('normal');app.menu.hide()
+    start=core.C(app.world)['abs'];self.assertEqual(app.world.s['loc'],0)
+    app.toggle_map();app.travel(1)
+    self.assertIsNotNone(app.transition)
+    self.assertTrue(app.blocked())
+    self.assertEqual(app.world.s['loc'],0)  # travel is only committed when card closes
+    self.assertEqual(core.C(app.world)['abs'],start)
+    card=app.transition;app.travel(2)       # a second input is ignored
+    self.assertEqual(app.world.s['loc'],0)
+    card.finish();self.assertIsNone(app.transition)
+    self.assertEqual(app.world.s['loc'],1)
+    self.assertEqual(core.C(app.world)['abs'],start+core.HOP)
+    self.assertEqual(app.view,'scene')
+    card.finish();self.assertEqual(core.C(app.world)['abs'],start+core.HOP)
+   finally:main.BASE=original
+
 if __name__=='__main__':unittest.main()

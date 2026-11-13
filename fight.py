@@ -13,6 +13,7 @@ MOVES={
  'jab':{'key':'J','name':'Быстрый удар рукой','h':'high','startup':.07,'active':.08,'rec':.14,'reach':82,'dmg':6,'stam':6,'parts':[('head',.6),('torso',.4)],'kb':10,'stun':.26},
  'hook':{'key':'K','name':'Тяжёлый хук','h':'mid','startup':.30,'active':.10,'rec':.34,'reach':92,'dmg':16,'stam':16,'parts':[('torso',.65),('arm_l',.175),('arm_r',.175)],'kb':34,'stun':.45},
  'lowkick':{'key':'U','name':'Быстрый удар ногой','h':'low','startup':.12,'active':.09,'rec':.20,'reach':100,'dmg':8,'stam':9,'parts':[('leg_l',.5),('leg_r',.5)],'kb':14,'stun':.30},
+ 'lunge':{'key':'F','name':'Рывок вперёд','h':'mid','startup':.19,'active':.10,'rec':.37,'reach':128,'dmg':12,'stam':20,'parts':[('torso',.8),('arm_l',.2)],'kb':28,'stun':.35},
  'highkick':{'key':'I','name':'Тяжёлый пинок в голову','h':'high','startup':.38,'active':.12,'rec':.42,'reach':112,'dmg':20,'stam':20,'parts':[('head',1.0)],'kb':40,'stun':.55},
 }
 COMBOS={('jab','jab','hook'):('Двойка-хук',1.25),('lowkick','lowkick','highkick'):('Подсечка-вертушка',1.35),('jab','hook','highkick'):('Лестница',1.30),('hook','highkick'):('Разрушитель',1.20),('jab','jab','jab'):('Серия',1.15)}
@@ -79,7 +80,10 @@ class FightEngine:
         # В полную силу дерётся босс у власти и бывший, который пришёл за реваншем. Просто бывший — уже не тот.
         style=STYLES.get(k,DEFAULT_STYLE);s.style=style;s.revenge=former.revenge_now(w,k);boss=s.boss=core.in_power(w,k) or s.revenge
         mx=s.mx=120 if boss else 90;ef=max(.02,min(1.0,S['npc_health'].get(k,mx)/mx));pf=max(.02,min(1.0,S['hp']/100))
-        s.p=Fighter('player',W_ARENA*.32,1,pf,min(S['stamina'],S['stamina_max']),g['damage']/16.0,g['armor'],1.0,1.0)
+        import equipment13
+        gear=equipment13.stats(w)
+        s.p=Fighter('player',W_ARENA*.32,1,pf,min(S['stamina'],S['stamina_max']),gear['damage']/16.0*gear['power'],gear['armor'],gear['speed'],1.0)
+        s.p.regen_bonus=gear['regen'];s.crit_bonus=max(0,gear['accuracy']-.72)*.2;s.special_ready=equipment13.levels(w).get('power',0)>0;s.special_cd=0.0
         s.e=Fighter('enemy',W_ARENA*.68,-1,ef,70+20*boss,style['power'],style['armor'],style['speed'],style['hp']*(1.15 if boss else .9))
         s.weak=core.weak_known(w,k);s.cigs=S['cig'];s.time=0.0;s.limit=time_limit;s.phase='intro';s.intro=1.6;s.events=[];s.result=None;s.reason='';s.hitstop=0.0
         s.think=0.0;s.block_hold=0.0;s.banner='';s.n_parry=0;s.n_combo=0;s.n_limb=0
@@ -87,7 +91,12 @@ class FightEngine:
     def press(s,name):
         if s.phase!='fight' or s.p.ko:return
         p=s.p
-        if name in MOVES:p.attack(name)
+        if name=='lunge':
+            if not s.special_ready or s.special_cd>0:return
+            if p.attack('lunge'):
+                p.x=max(40,min(W_ARENA-40,p.x+p.face*46));s.special_cd=5.0
+                s.events.append({'type':'text','x':p.x,'text':'РЫВОК','color':'#e5b767'})
+        elif name in MOVES:p.attack(name)
         elif name=='roll':p.roll()
         elif name=='dodge':p.dodge(True)
         elif name=='smoke':
@@ -107,6 +116,7 @@ class FightEngine:
         if s.phase!='fight':
             for f in(s.p,s.e):s._tick_fighter(f,dt)
             return s.events
+        s.special_cd=max(0.0,s.special_cd-dt)
         if s.hitstop>0:s.hitstop-=dt;return s.events
         s.time+=dt
         s._ai(dt)
@@ -121,7 +131,7 @@ class FightEngine:
         if f.combo_t>.95:f.combo=[]
         if f.ko:f.vx*=.9;f.x+=f.vx*dt;f.x=max(40,min(W_ARENA-40,f.x));return
         if f.state in('idle','walk'):
-            f.stam=min(f.stam_max,f.stam+(f.regen*(.55 if f.blocking else 1))*dt)
+            f.stam=min(f.stam_max,f.stam+(f.regen*getattr(f,'regen_bonus',1.0)*(.55 if f.blocking else 1))*dt)
         if o is not None and f.state not in('roll',):f.face=1 if o.x>f.x else -1
         f.x+=f.vx*dt;f.vx*=max(0,1-7*dt)
         if f.state in('idle','walk'):
@@ -175,7 +185,7 @@ class FightEngine:
         part=s._pick(m);dmg=m['dmg']*a.power*mult
         if a.counter>0:dmg*=1.5;a.counter=0;s.events.append({'type':'text','x':a.x,'text':'КОНТРАТАКА','color':'#e5b767'})
         if a.kind=='player' and s.weak:dmg*=1.35
-        crit=s.rng.random()<.08
+        crit=s.rng.random()<(.08+(s.crit_bonus if a.kind=='player' else 0))
         if crit:dmg*=1.5
         s._damage(d,part,dmg,a,m,crit)
     def _pick(s,m):

@@ -34,9 +34,9 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Свои люди v9');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Комикс и бой v13');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
-  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
+  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
   try:st.theme_use('clam')
   except tk.TclError:pass
@@ -83,7 +83,7 @@ class App:
   try:self.root.focus_set()
   except Exception:pass
   return True
- def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open)
+ def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition)
  def persist(self):
   if not self.has_game:return
   try:
@@ -248,7 +248,10 @@ class App:
  def travel(self,i):
   if i==self.world.s['loc']:return self.show_scene()
   if self.blocked():return self.status.config(text='Завершите действие перед переходом.')
-  self.go(i);self.show_scene()
+  from travelui import TravelCard
+  try:self.transition=TravelCard(self,i)
+  except (OSError,ValueError) as e:
+   self.status.config(text='Переход без заставки: '+str(e));self.go(i);self.show_scene()
  def go(self,i):
   if self.blocked():return self.status.config(text='Завершите действие или отмените запрос перед переходом.')
   self.sound.play('step');core.travel(self.world,i);self.propagate();self.hover=None;self.stream_text.clear();self.draft_speech.clear();self.select_default();self.persist();self.refresh();self.initiative('player_entered')
@@ -372,7 +375,10 @@ class App:
    st=core.stash_get(w,L);inv=core.C(w)['inv']
    self.label(box,'Схрон в локации «%s»'%NAMES[L],12,True,color=GOLD).pack(anchor='w',pady=6)
    for it,name in [('cig','Сигареты'),('shiv','Заточка'),('phone','Мобильник'),('tea','Пачка чая')]:
-    have=w.s['cig'] if it=='cig' else inv.get(it,0);r=tk.Frame(box,bg=PANEL);r.pack(fill='x',pady=3);self.label(r,'%s · при себе %d · в схроне %d'%(name,have,st.get(it,0)),11).pack(side='left')
+    have=w.s['cig'] if it=='cig' else inv.get(it,0);r=tk.Frame(box,bg=PANEL);r.pack(fill='x',pady=3)
+    pic=self.item_icon(it,30)
+    if pic:tk.Label(r,image=pic,bg=PANEL).pack(side='left',padx=3)
+    self.label(r,'%s · при себе %d · в схроне %d'%(name,have,st.get(it,0)),11).pack(side='left')
     def mv(it=it,put=True):
      try:core.stash_move(w,L,it,1,put);self.persist();self.refresh();draw()
      except ValueError as e:self.status.config(text=str(e))
@@ -393,6 +399,24 @@ class App:
    win.portrait_ref=ImageTk.PhotoImage(image);tk.Label(left,image=win.portrait_ref,bg=PANEL).pack()
   except (OSError,ValueError):self.label(left,'Портрет не найден',11).pack()
   self.label(left,'ВЫ · '+profile.nickname(self.world),12,True,color=GOLD,wraplength=240).pack(pady=12)
+  import equipment13
+  gear=equipment13.stats(self.world)
+  for kind,text in [(gear['weapon'],gear['name']),(('armor' if self.world.s['gear'].get('armor',2)>=7 else 'boots'),'Броня: '+str(gear['armor']))]:
+   row=tk.Frame(left,bg=PANEL);row.pack(fill='x',pady=3)
+   pic=self.item_icon(kind,38)
+   if pic:tk.Label(row,image=pic,bg=PANEL).pack(side='left',padx=4)
+   self.label(row,text,10,color=FG).pack(side='left')
+  for kind,text in [('cig','Сигареты: '+str(self.world.s['cig'])),('coin','Рубли: '+str(self.world.s['rub']))]:
+   row=tk.Frame(left,bg=PANEL);row.pack(fill='x',pady=2)
+   pic=self.item_icon(kind,30)
+   if pic:tk.Label(row,image=pic,bg=PANEL).pack(side='left',padx=4)
+   self.label(row,text,9,color=MUTED).pack(side='left')
+  for item,count in core.C(self.world)['inv'].items():
+   if count and item in ('shiv','phone','tea','key','letter','parcel'):
+    row=tk.Frame(left,bg=PANEL);row.pack(fill='x',pady=2)
+    pic=self.item_icon(item,30)
+    if pic:tk.Label(row,image=pic,bg=PANEL).pack(side='left',padx=4)
+    self.label(row,core.ITEMS[item]+' ×'+str(count),9,color=MUTED).pack(side='left')
   frame=tk.Frame(outer,bg=PANEL);frame.pack(side='left',fill='both',expand=True)
   bar=tk.Scrollbar(frame);bar.pack(side='right',fill='y')
   txt=tk.Text(frame,wrap='word',bg='#0b1119',fg=FG,font=('Segoe UI',11),padx=14,pady=12,relief='flat',yscrollcommand=bar.set);txt.pack(side='left',fill='both',expand=True);bar.config(command=txt.yview)
@@ -461,13 +485,36 @@ class App:
    pop=self.window('Оспорить слух',750,500)
    for g in self.world.heard(k):self.button(pop,g['claim'][:100],lambda id=g['id']:(do(lambda:self.world.deny(k,id)),pop.destroy())).pack(fill='x',padx=10,pady=3)
   self.button(w,'Оспорить услышанный NPC слух',deny).pack(fill='x',padx=15,pady=4)
+ def item_icon(self,kind,size=48):
+  """Cache each game asset for Tk widgets; never lose PhotoImage references."""
+  key=('item13',kind,size)
+  if key not in self.cardrefs:
+   path=BASE/'assets/items'/(kind+'.png')
+   if not path.is_file():return None
+   self.cardrefs[key]=ImageTk.PhotoImage(Image.open(path).resize((size,size),Image.Resampling.LANCZOS))
+  return self.cardrefs[key]
  def equipment(self):
   if self.blocked():return
-  w=self.window('Экипировка',650,390);self.label(w,json.dumps(self.world.s['gear'],ensure_ascii=False),11,wraplength=600).pack(pady=15)
-  def buy(k):
-   try:self.world.buy(k);self.persist();self.refresh();w.destroy()
-   except ValueError as e:messagebox.showinfo('Ресурсы',str(e))
-  for t,k in [('Заточка · урон 24 · 40₽','knife'),('Телогрейка · броня 7 · 35₽','armor'),('Перевязка · +35 HP · 10₽','heal')]:self.button(w,t,lambda k=k:buy(k)).pack(fill='x',padx=15,pady=5)
+  import equipment13
+  w=self.window('Мастерская · оружие и тренировка',780,690)
+  box=tk.Frame(w,bg=PANEL);box.pack(fill='both',expand=True,padx=24,pady=16)
+  def draw():
+   for child in box.winfo_children():child.destroy()
+   st=equipment13.stats(self.world);levels=equipment13.levels(self.world)
+   self.label(box,'СНАРЯЖЕНИЕ / ТРЕНИРОВКА',16,True,color=GOLD).pack(anchor='w',pady=(0,7))
+   self.label(box,f"В руках: {st['name']} · урон {st['damage']} · броня {st['armor']} · ₽ {self.world.s['rub']}\nУдар ×{st['power']:.2f} · скорость ×{st['speed']:.2f} · восстановление ×{st['regen']:.2f}",11,wraplength=700,justify='left').pack(anchor='w',pady=(0,14))
+   for kind,label,icon,price,reason in equipment13.offers(self.world):
+    row=tk.Frame(box,bg=CARD);row.pack(fill='x',pady=4)
+    pic=self.item_icon(icon,44)
+    if pic:tk.Label(row,image=pic,bg=CARD).pack(side='left',padx=8,pady=4)
+    self.label(row,label,10,True,color=GOLD if not reason else MUTED,wraplength=450,justify='left').pack(side='left',fill='x',expand=True)
+    def buy(k=kind):
+     try:self.world.buy(k);self.persist();self.refresh();draw()
+     except ValueError as e:messagebox.showinfo('Снаряжение',str(e))
+    b=self.button(row,('—' if price is None else str(price)+' ₽') if not reason else reason,buy)
+    b.pack(side='right',padx=8)
+    if reason:b.config(state='disabled')
+  draw()
  def fight(self,k=None,ambush=False):
   if self.blocked():return
   manual=k is None;k=k or self.npc
