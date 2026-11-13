@@ -34,14 +34,14 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Комикс и бой v13');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Наставник v14');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
-  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
+  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
   try:st.theme_use('clam')
   except tk.TclError:pass
   st.configure('Dark.TCombobox',fieldbackground=CARD,background=CARD,foreground=FG,arrowcolor=GOLD,padding=7);st.map('Dark.TCombobox',fieldbackground=[('readonly',CARD)],foreground=[('readonly',FG)])
-  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save());root.bind('<Escape>',lambda e:(self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
+  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save() if not self.mentor else None);root.bind('<Escape>',lambda e:None if self.mentor else (self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
  def label(self,parent,text='',size=11,bold=False,color=None,**kw):return tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color or FG,font=('Segoe UI',size,'bold' if bold else 'normal'),**kw)
  def button(self,parent,text,fn,primary=False):return tk.Button(parent,text=text,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',activeforeground='#111821' if primary else FG,relief='flat',bd=0,font=('Segoe UI',10,'bold'),padx=12,pady=8,cursor='hand2')
  def window(self,title,w=900,h=650):
@@ -49,7 +49,7 @@ class App:
  def build_header(self):
   f=tk.Frame(self.root,bg=BG);f.grid(row=0,column=0,sticky='ew',padx=12,pady=(8,2));f.columnconfigure(3,weight=1)
   self.title=self.hint=self.modebutton=self.coverbtn=self.caste_lbl=_Null();self.navbuttons={}
-  self.button(f,'☰',lambda:self.menu.show()).grid(row=0,column=0,padx=(0,6))
+  self.menubtn=self.button(f,'☰',lambda:self.menu.show());self.menubtn.grid(row=0,column=0,padx=(0,6))
   self.mapbtn=self.button(f,'Карта · M',self.toggle_map,True);self.mapbtn.grid(row=0,column=1,padx=3)
   self.clock=self.label(f,size=13,bold=True,color=GOLD);self.clock.grid(row=0,column=2,sticky='w',padx=14)
   self.hud=self.label(f,size=11,color=MUTED);self.hud.grid(row=0,column=4,sticky='e')
@@ -61,7 +61,7 @@ class App:
   self.actrow=tk.Frame(f,bg=PANEL);self.actrow.grid(row=2,column=0,sticky='ew',padx=4,pady=2)
   self.chat=row=tk.Frame(f,bg=PANEL);row.grid(row=3,column=0,sticky='ew',padx=6,pady=4);row.columnconfigure(1,weight=1)
   self.who=self.label(row,size=12,bold=True);self.who.grid(row=0,column=0,sticky='w',padx=(0,12));self.npcbox=ttk.Combobox(row,state='readonly',style='Dark.TCombobox',width=22);self.npcbox.grid(row=1,column=0,sticky='ew',padx=(0,12));self.npcbox.bind('<<ComboboxSelected>>',lambda e:self.pick_npc());self.relation=self.label(row,size=9,color=MUTED);self.relation.grid(row=2,column=0,sticky='w')
-  self.entry=tk.Text(row,height=2,wrap='word',bg=CARD,fg=FG,insertbackground=GOLD,font=('Segoe UI',12),relief='flat',padx=12,pady=8);self.entry.grid(row=0,column=1,rowspan=3,sticky='ew',padx=(0,10));self.entry.bind('<Return>',self.enter);self.entry.bind('<Shift-Return>',self.newline);self.entry.bind('<Control-Return>',self.enter);self.entry.bind('<Escape>',lambda e:(self.close_chat(True),'break')[1])
+  self.entry=tk.Text(row,height=2,wrap='word',bg=CARD,fg=FG,insertbackground=GOLD,font=('Segoe UI',12),relief='flat',padx=12,pady=8);self.entry.grid(row=0,column=1,rowspan=3,sticky='ew',padx=(0,10));self.entry.bind('<Return>',self.enter);self.entry.bind('<Shift-Return>',self.newline);self.entry.bind('<Control-Return>',self.enter);self.entry.bind('<Escape>',lambda e:(self.close_chat(True) if not self.mentor else None,'break')[1])
   self.sendbutton=self.button(row,'Сказать ↵',self.send,True);self.sendbutton.grid(row=0,column=2,sticky='ew');self.button(row,'Закрыть',lambda:self.close_chat(True)).grid(row=1,column=2,sticky='ew',pady=3)
   self.private=tk.BooleanVar(value=False);tk.Checkbutton(row,text='Наедине',variable=self.private,bg=PANEL,fg=MUTED,selectcolor=CARD,activebackground=PANEL).grid(row=2,column=2)
   self.chat.grid_remove()
@@ -83,7 +83,7 @@ class App:
   try:self.root.focus_set()
   except Exception:pass
   return True
- def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition)
+ def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor)
  def persist(self):
   if not self.has_game:return
   try:
@@ -138,8 +138,11 @@ class App:
   self.text_window('Задания и дела',t)
  def show_stats(self):
   if self.has_game:self.menu.show('stats')
- def maybe_tutorial(self):
-  if self.has_game and self.settings.get('hints',True) and not self.settings.get('seen_howto') and not self.menu_open and not self.modal:Tutorial(self)
+ def maybe_tutorial(self,force=False):
+  if self.mentor or not self.has_game or self.menu_open or self.modal or self.battle or self.mini or self.transition:return
+  if force or (self.settings.get('hints',True) and not self.settings.get('tutorial_v14_done',False)):
+   from mentor14 import MentorTour
+   MentorTour(self)
  def check_achievements(self):
   if not self.has_game:return
   for id,title,desc in meta.check_achievements(self.world,BASE):self.sound.play('ach');self.toast('★ Достижение: '+title,desc)
@@ -161,6 +164,7 @@ class App:
   except Exception:pass
   if self.cancel_event:self.cancel_event.set()
   self.job=None
+  if self.mentor:self.mentor.finish()
   if self.battle:self.battle.finish()
   self.persist();self.root.destroy()
  def launch(self,kind,fn,meta=None):
@@ -333,11 +337,11 @@ class App:
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
   for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
-  mb.config(menu=m);mb.grid(row=0,column=n,padx=(6,0))
+  mb.config(menu=m);mb.grid(row=0,column=n,padx=(6,0));self.morebtn=mb
  def card_key(self,i):
   if 1<=i<=len(self.acts):self.do_activity(self.acts[i-1]['id'])
  def pump(self):
-  if self.closed or self.modal or self.battle or self.mini or self.menu_open or not self.has_game:return
+  if self.closed or self.mentor or self.modal or self.battle or self.mini or self.menu_open or not self.has_game:return
   p=core.pop_pending(self.world)
   if p and p.get('t')=='scene' and p['id'] in SCENES:self.open_scene(p['id'],p.get('vars'))
   elif p and p.get('t')=='fight':self.fight(p['k'],bool(p.get('ambush')))  # реванш: бой начинается без вопроса «начать?»

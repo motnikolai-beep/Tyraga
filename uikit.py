@@ -89,6 +89,7 @@ class EventWindow:
         except tk.TclError:pass
         s.a.persist();s.a.refresh();s.a.propagate()
         if core.C(s.w).get('ending') and not had:s.a.status.config(text='Концовка пройдена. Песочница продолжается: можно играть дальше.');s.a.root.after(300,s.a.show_stats)
+        s.a.root.after(0,s.a.maybe_tutorial)
 
 class QuickGame:
     DESC={'timing':('Поймай момент','Нажимай СТОП (или Пробел), когда маркер в зелёной зоне. Нужно 2 попадания из 3.'),
@@ -249,6 +250,8 @@ class MapView:
         if i!=s.hover:s.hover=i;s.c.config(cursor='hand2' if i is not None else '');s.draw()
     def motion(s,e):s.sethover(s.at(e.x,e.y))
     def click(s,e):
+        tour=getattr(s.a,'mentor',None)
+        if tour and tour.step[0]=='boss':return
         i=s.at(e.x,e.y)
         if i is not None:s.a.travel(i)
 

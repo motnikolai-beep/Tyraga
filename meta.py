@@ -5,7 +5,7 @@ from pathlib import Path
 import core
 
 SLOTS=['slot1','slot2','slot3']
-DEFAULT_SETTINGS={'brightness':1.0,'fullscreen':False,'ui_scale':1.0,'cover':True,'volume':0.7,'music':0.4,'autosave_sec':30,'hints':True,'seen_howto':False}
+DEFAULT_SETTINGS={'brightness':1.0,'fullscreen':False,'ui_scale':1.0,'cover':True,'volume':0.7,'music':0.4,'autosave_sec':30,'hints':True,'seen_howto':False,'tutorial_v14_done':False}
 
 def sdir(base):
     p=Path(base)/'saves';p.mkdir(parents=True,exist_ok=True);return p

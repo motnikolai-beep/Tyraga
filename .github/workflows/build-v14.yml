@@ -1,13 +1,17 @@
-name: Build v13 Comic Combat
+name: Build v14 Mentor
 on:
   workflow_dispatch:
   push:
     paths:
       - 'build_v12.py'
       - 'build_v13.py'
+      - 'build_v14.py'
+      - 'mentor14.py'
+      - 'ИГРАТЬ_v14.md'
+      - 'CHANGELOG_v14.md'
       - 'ИГРАТЬ_v13.md'
       - 'CHANGELOG_v13.md'
-      - '.github/workflows/build-v13.yml'
+      - '.github/workflows/build-v14.yml'
       - 'первая половина/**'
       - 'art_4k/**'
       - 'assets/**'
@@ -25,15 +29,15 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install 'Pillow>=10'
-      - run: python build_v13.py
+      - run: python build_v14.py
       - uses: actions/upload-artifact@v4
         with:
-          name: TYURYAGA-v13-FULL
-          path: dist/TYURYAGA_v13_FULL.zip
+          name: TYURYAGA-v14-FULL
+          path: dist/TYURYAGA_v14_FULL.zip
           if-no-files-found: error
       # The archive is uploaded first, so a failing test never hides the build itself.
       - name: Tests of the sources
         run: python -m unittest discover -s tests
       - name: Tests of the built game
         run: python -m unittest discover -s tests
-        working-directory: dist/Tyuryaga_v13
+        working-directory: dist/Tyuryaga_v14

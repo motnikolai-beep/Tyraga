@@ -12,6 +12,7 @@ HOWTO="""УПРАВЛЕНИЕ
 • Enter — отправить реплику NPC, Shift+Enter — перенос строки.
 
 КАК ИГРАТЬ
+• При первом продолжении Лис-наставник ведёт по подсвеченным кнопкам. Пропуск и отключение — на его панели; для повтора откройте главное меню → «Обучение с Лисом — заново».
 • Кликните по портрету, чтобы выбрать собеседника, и пишите ему своими словами.
 • Время идёт от всего: переходы, работа, разговоры. Лечь на шконку можно только с 22:00.
 • Кормёжка в 08:00, 13:00 и 19:00: успейте прийти, иначе останетесь голодным.
@@ -33,13 +34,14 @@ class Menu:
         s.inner=tk.Frame(s.c,bg='#0d1520');s.c.bind('<Configure>',lambda e:s.paint())
     # ---- показ ----
     def show(s,screen='main'):
+        if getattr(s.a,'mentor',None):return
         s.visible=True;s.a.menu_open=True;s.f.place(x=0,y=0,relwidth=1,relheight=1);s.f.lift();s.go(screen)
     def hide(s):
         if not s.a.has_game:return
-        s.visible=False;s.a.menu_open=False;s.f.place_forget();s.a.refresh();s.a.root.after(500,s.a.maybe_tutorial)
+        s.visible=False;s.a.menu_open=False;s.f.place_forget();s.a.refresh();s.a.root.after(0,s.a.maybe_tutorial)
     def toggle(s):
         if s.visible:s.hide()
-        elif not s.a.modal and not s.a.battle and not s.a.mini:s.show()
+        elif not s.a.modal and not s.a.battle and not s.a.mini and not s.a.mentor:s.show()
     def paint(s):
         c=s.c;w=max(300,c.winfo_width());h=max(300,c.winfo_height());br=s.a.settings.get('brightness',1.0);key=(w,h,br)
         if key not in s.cache:
@@ -59,7 +61,7 @@ class Menu:
         return b
     # ---- экраны ----
     def screen_main(s):
-        a=s.a;s.title('ТЮРЯГА',40);s.note('Комикс и бой · v13',MUTED,11)
+        a=s.a;s.title('ТЮРЯГА',40);s.note('Наставник · v14',MUTED,11)
         if a.has_game:s.note('Текущая игра: день %d · %s · %s'%(a.world.s['day'],core.hhmm(a.world),core.diff(a.world)['name']),GOLD,10)
         if a.has_game:s.btn('▶  Продолжить',s.hide,True)
         s.btn('Новая игра',lambda:s.go('new'),not a.has_game)
@@ -68,6 +70,7 @@ class Menu:
         s.btn('Статистика и выборы',lambda:s.go('stats'),state='normal' if a.has_game else 'disabled')
         s.btn('Настройки',lambda:s.go('settings'))
         got=len(meta.ach_store(a.base_data)['unlocked']);s.btn('Достижения  (%d/%d)'%(got,len(meta.ACH)),lambda:s.go('ach'))
+        if a.has_game:s.btn('Обучение с Лисом — заново',lambda:(s.hide(),a.root.after(50,lambda:a.maybe_tutorial(force=True))))
         s.btn('Как играть',lambda:s.go('howto'));s.btn('Авторы',lambda:s.go('authors'));s.btn('Выход',a.close)
         s.note('',MUTED,4)
     def screen_new(s):
@@ -146,7 +149,7 @@ class Menu:
             for k,t,lo,hi in s.AI_NUM:entry(t,k,cfg.get(k,''))
             for k,t in s.AI_STR:entry(t,k,cfg.get(k,''),width=52)
         else:
-            sec=st['autosave_sec'];entry('Автосохранение каждые N секунд (10–600)','autosave_sec',sec);check('Показывать подсказки при старте','hints',st['hints'])
+            sec=st['autosave_sec'];entry('Автосохранение каждые N секунд (10–600)','autosave_sec',sec);check('Пошаговое обучение при первом запуске','hints',st['hints'])
             d=core.diff(a.world) if a.has_game else core.DIFFS['normal']
             tk.Label(box,text='Сложность текущей игры: %s'%d['name'],bg=PANEL,fg=GOLD,font=('Segoe UI',11,'bold')).pack(anchor='w',padx=12,pady=6)
         s.msg=tk.Label(s.inner,text='',bg=s.inner.cget('bg'),fg=GREEN,font=('Segoe UI',10),wraplength=620);s.msg.pack()
