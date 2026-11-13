@@ -34,16 +34,16 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Кто что знает v24')
+  self.root=root;root.title('Тюряга · Колесо диалогов v25')
   screen=ui_layout.screen_size(root);width,height=ui_layout.main_size(screen);self._window_width=width
   root.geometry(f'{width}x{height}');root.minsize(min(960,width),min(640,height));root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
-  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
+  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.wheel=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
   try:st.theme_use('clam')
   except tk.TclError:pass
   st.configure('Dark.TCombobox',fieldbackground=CARD,background=CARD,foreground=FG,arrowcolor=GOLD,padding=7);st.map('Dark.TCombobox',fieldbackground=[('readonly',CARD)],foreground=[('readonly',FG)])
-  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.bind('<Configure>',lambda e:self.reflow_header(e.width) if e.widget is root else None,add='+');root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save() if not self.mentor else None);root.bind('<Escape>',lambda e:None if self.mentor else (self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
+  self.chat_open=False;self.build_header();self.build_nav();self.build_scene();self.select_default();root.bind('<Configure>',lambda e:self.reflow_header(e.width) if e.widget is root else None,add='+');root.protocol('WM_DELETE_WINDOW',self.close);root.bind('<Control-s>',lambda e:self.quick_save() if not self.mentor else None);root.bind('<Escape>',lambda e:None if self.mentor else (self.close_chat() or self.menu.toggle()));root.bind('<F11>',lambda e:self.toggle_fullscreen());root.bind('<F2>',lambda e:self.show_history());root.after(80,self.poll);root.bind('<KeyPress-m>',lambda e:self.hot(self.toggle_map,e));root.bind('<KeyPress-j>',lambda e:self.hot(self.journal_window,e));root.bind('<KeyPress-t>',lambda e:self.hot(self.open_chat,e));root.bind('<KeyPress-r>',lambda e:self.hot(self.open_wheel,e));root.bind('<Return>',lambda e:self.hot(self.open_chat,e));[root.bind('<Alt-Key-%d>'%i,lambda e,i=i:self.card_key(i)) for i in range(1,8)];root.after(400,lambda:core.story_check(self.world));root.after(self.settings['autosave_sec']*1000,self.autosave);self.menu=Menu(self);self.apply_settings();self.refresh();self.connect();self.menu.show()
  def label(self,parent,text='',size=11,bold=False,color=None,**kw):return tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color or FG,font=('Segoe UI',size,'bold' if bold else 'normal'),**kw)
  def button(self,parent,text,fn,primary=False):return tk.Button(parent,text=text,command=fn,bg=GOLD if primary else CARD,fg='#111821' if primary else FG,activebackground='#e9c88f' if primary else '#24364a',activeforeground='#111821' if primary else FG,relief='flat',bd=0,font=('Segoe UI',10,'bold'),padx=12,pady=8,wraplength=min(450,ui_layout.text_wrap(self._window_width,180)),justify='left',cursor='hand2')
  def window(self,title,w=900,h=650):
@@ -56,6 +56,7 @@ class App:
   self.title=self.hint=self.modebutton=self.coverbtn=self.caste_lbl=_Null();self.navbuttons={}
   self.menubtn=self.button(f,'☰',lambda:self.menu.show());self.menubtn.grid(row=0,column=0,padx=(0,6))
   self.mapbtn=self.button(f,'Карта · M',self.toggle_map,True);self.mapbtn.grid(row=0,column=1,padx=3)
+  self.wheelbtn=self.button(f,'Колесо · R',self.open_wheel);self.wheelbtn.grid(row=0,column=3,sticky='w',padx=8)
   self.clock=self.label(f,size=13,bold=True,color=GOLD);self.clock.grid(row=0,column=2,sticky='w',padx=14)
   self.hud=self.label(f,size=11,color=MUTED);self.hud.grid(row=0,column=4,sticky='e')
  def reflow_header(self,width):
@@ -70,7 +71,7 @@ class App:
   self.actrow=tk.Frame(f,bg=PANEL);self.actrow.grid(row=2,column=0,sticky='ew',padx=4,pady=2)
   self.actrow.bind('<Configure>',lambda e:self.render_cards() if self.has_game and getattr(self,'_card_columns',None)!=min(len(self.acts),ui_layout.card_count(e.width)) else None)
   self.chat=row=tk.Frame(f,bg=PANEL);row.grid(row=3,column=0,sticky='ew',padx=6,pady=4);row.columnconfigure(1,weight=1)
-  self.who=self.label(row,size=12,bold=True);self.who.grid(row=0,column=0,sticky='w',padx=(0,12));self.npcbox=ttk.Combobox(row,state='readonly',style='Dark.TCombobox',width=22);self.npcbox.grid(row=1,column=0,sticky='ew',padx=(0,12));self.npcbox.bind('<<ComboboxSelected>>',lambda e:self.pick_npc());self.relation=self.label(row,size=9,color=MUTED);self.relation.grid(row=2,column=0,sticky='w')
+  self.who=self.label(row,size=12,bold=True);self.who.grid(row=0,column=0,sticky='w',padx=(0,12));self.npcbox=ttk.Combobox(row,state='readonly',style='Dark.TCombobox',width=22);self.npcbox.grid(row=1,column=0,sticky='ew',padx=(0,12));self.npcbox.bind('<<ComboboxSelected>>',lambda e:self.pick_npc());self.relation=self.label(row,size=9,color=MUTED);self.relation.grid(row=2,column=0,sticky='w');self.button(row,'Колесо · R',self.open_wheel).grid(row=3,column=0,sticky='ew',padx=(0,12),pady=2)
   self.entry=tk.Text(row,height=2,wrap='word',bg=CARD,fg=FG,insertbackground=GOLD,font=('Segoe UI',12),relief='flat',padx=12,pady=8);self.entry.grid(row=0,column=1,rowspan=3,sticky='ew',padx=(0,10));self.entry.bind('<Return>',self.enter);self.entry.bind('<Shift-Return>',self.newline);self.entry.bind('<Control-Return>',self.enter);self.entry.bind('<Escape>',lambda e:(self.close_chat(True) if not self.mentor else None,'break')[1])
   self.sendbutton=self.button(row,'Сказать ↵',self.send,True);self.sendbutton.grid(row=0,column=2,sticky='ew');self.button(row,'Закрыть',lambda:self.close_chat(True)).grid(row=1,column=2,sticky='ew',pady=3)
   self.private=tk.BooleanVar(value=False);tk.Checkbutton(row,text='Наедине',variable=self.private,bg=PANEL,fg=MUTED,selectcolor=CARD,activebackground=PANEL).grid(row=2,column=2)
@@ -93,7 +94,13 @@ class App:
   try:self.root.focus_set()
   except Exception:pass
   return True
- def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor or self.env_window)
+ def open_wheel(self):
+  if not self.has_game or self.blocked() or self.wheel:return
+  if not self.world.witnesses():return self.status.config(text='Здесь не с кем говорить.')
+  if not self.npc or self.npc not in self.world.witnesses():self.select_default()
+  from radial25 import DialogueWheel
+  self.wheel=DialogueWheel(self,self.npc)
+ def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor or self.env_window or self.wheel)
  def persist(self):
   if not self.has_game:return
   try:
@@ -173,6 +180,7 @@ class App:
    self.root.after(4200,gone)
   except Exception:pass
  def close(self):
+  if self.wheel:self.wheel.close()
   self.closed=True
   try:self.sound.close()
   except Exception:pass
@@ -423,7 +431,7 @@ class App:
    b=tk.Button(self.actrow,text=txt,image=self.cardrefs[key],compound='left',command=lambda id=a['id']:self.do_activity(id),bg='#1d2b3c' if not off else '#121a24',fg=FG if not off else MUTED,activebackground='#2c4058',relief='flat',bd=0,font=('Segoe UI',9,'bold'),padx=8,pady=4,cursor='hand2' if not off else 'arrow',wraplength=150,justify='left')
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
-  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Кто что знает',self.knowledge_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
+  for t,fn in [('Говорить · Enter',self.open_chat),('Колесо диалогов · R',self.open_wheel),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Кто что знает',self.knowledge_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
   if len(self.acts)>n:
    m.add_separator()
    for a in self.acts[n:]:m.add_command(label=a['title']+(' · '+a['off'] if a['off'] else ''),command=lambda id=a['id']:self.do_activity(id))
