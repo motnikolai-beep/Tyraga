@@ -114,6 +114,24 @@ class Travel(unittest.TestCase):
             self.assertEqual(panel.size,(600,380))
         with self.assertRaises(ValueError):comic_transition.render(ROOT,w,0,0)
 
+    def test_all_132_ordered_location_pairs_render_in_both_directions(self):
+        """Every map destination has an on-demand comic, including the return journey."""
+        w=mk();pairs=0
+        self.assertEqual(len(core.NAMES),12)
+        self.assertEqual(set(core.MAPPOS),set(range(12)))
+        for src in range(12):
+            w.s['loc']=src
+            for dest in range(12):
+                if src==dest:continue
+                self.assertEqual(core.hops(src,dest),core.hops(dest,src))
+                self.assertGreater(core.travel_minutes(w,dest),0)
+                left,right=comic_transition.copy(w,src,dest)
+                self.assertTrue(left.strip() and right.strip(),(src,dest))
+                with comic_transition.render(ROOT,w,src,dest,(600,380)) as panel:
+                    self.assertEqual(panel.size,(600,380))
+                pairs+=1
+        self.assertEqual(pairs,132)
+
     def test_travel_copy_names_match_laundry_and_workshop(self):
         w=mk()
         self.assertIn(core.NAMES[6].lower(),comic_transition.copy(w,6,7)[0].lower())

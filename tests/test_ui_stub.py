@@ -236,6 +236,20 @@ class ComicTravelUI(unittest.TestCase):
     self.assertEqual(core.C(app.world)['abs'],start+core.HOP)
     self.assertEqual(app.view,'scene')
     card.finish();self.assertEqual(core.C(app.world)['abs'],start+core.HOP)
+    # A distant room is directly selectable; returning uses the reverse comic.
+    from comic_transition import render
+    with patch('comic_transition.render',wraps=render) as pictures:
+     for target in (11,1):
+      source=app.world.s['loc'];before=core.C(app.world)['abs']
+      app.toggle_map();app.map.draw()
+      x0,y0,x1,y1=app.map.rects[target]
+      app.map.click(types.SimpleNamespace(x=(x0+x1)//2,y=(y0+y1)//2))
+      pictures.assert_called_with(app.base,app.world,source,target)
+      self.assertEqual(app.world.s['loc'],source)
+      self.assertIsNotNone(app.transition)
+      app.transition.finish()
+      self.assertEqual(app.world.s['loc'],target)
+      self.assertEqual(core.C(app.world)['abs']-before,core.hops(source,target)*core.HOP)
    finally:main.BASE=original
 
 if __name__=='__main__':unittest.main()
