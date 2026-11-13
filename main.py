@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Почтовый вопрос v18');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Подготовка юбилея v19');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
@@ -351,6 +351,19 @@ class App:
   win.protocol('WM_DELETE_WINDOW',close)
   row=tk.Frame(box,bg=PANEL);row.pack(side='bottom',fill='x',pady=8)
   self.button(row,('Лечь до утра' if id in ('bed','cot','bunks') and core.is_night(self.world) else action),use,True).pack(side='left',padx=4)
+  if id=='stage':
+   import jubilee19
+   r=jubilee19.state(self.world)
+   def jubilee(fn):
+    close()
+    try:
+     text=fn();self.persist();self.refresh();self.status.config(text=text)
+    except ValueError as e:self.status.config(text=str(e))
+   if r['theme'] is None:
+    for theme,title in [('voices','Голоса жителей'),('records','Двадцать строк истории'),('quiet','Тихий вечер')]:
+     self.button(box,title,lambda theme=theme:jubilee(lambda:jubilee19.plan(self.world,theme))).pack(anchor='w',pady=2)
+   elif not r['rehearsed']:
+    self.button(box,'Проверить площадку для вечера',lambda:jubilee(lambda:jubilee19.rehearse(self.world))).pack(anchor='w',pady=2)
   if id=='bed':
    import note17
    if not note17.state(self.world)['found']:
@@ -552,6 +565,9 @@ class App:
     social.arrival(self.world)
     self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
+  import jubilee19
+  if k in jubilee19.GUESTS and jubilee19.state(self.world)['theme'] is not None and k not in jubilee19.state(self.world)['invited']:
+   self.button(w,'Пригласить обсудить юбилейный вечер',lambda:do(lambda:jubilee19.invite(self.world,k))).pack(fill='x',padx=15,pady=4)
   import route18
   if k=='cenz' and route18.eligible(self.world) and route18.state(self.world)['route'] is None:
    for title,choice in [('Узнать порядок письма, не называя Шкета','anonymous'),('Спросить прямо о письме Шкета','open')]:
