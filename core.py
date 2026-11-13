@@ -342,7 +342,7 @@ def activities(w):
     if L==7:add('exchange','Биржа чая',20,'coin');add('order_shiv','Заказать заточку (4 сиг., 2 дня)',10,'rat','Заказ уже в работе' if has(w,'shiv_ordered') else 'Нужно 4 сигареты' if s['cig']<4 else None)
     if L==7:add('letter','Написать письмо домой',40,'book','Сегодня письмо уже ушло' if has(w,'letter_today') else None)
     if L==10:add('parcel','Передать посылку (2 пачки чая)',15,'heart','Нужны 2 пачки чая' if C(w)['inv'].get('tea',0)<2 else 'Посылка уже в пути' if has(w,'parcel_sent') else None)
-    add('bed','Лечь на шконку',0,'clock',None if night else 'Только ночью (с 22:00)')
+    if L in (0,9):add('bed','Лечь на шконку' if L==0 else 'Лечь на койку',0,'clock',None if night else 'Только ночью (с 22:00)')
     for a in out:
         b=turf_boss(w,a['id'])
         if b:a['title']+=' · хозяин — '+w.npcs[b]['name']
@@ -439,6 +439,8 @@ def journal(w):
     out.append(('Слухи зоны',zone_news.journal(w)))
     import life15,boss15
     out.append(('Повседневная жизнь',life15.journal(w)))
+    import hotspots16
+    out.append(('Следы мест',hotspots16.journal(w)))
     out.append(('Судьбы хозяев',boss15.journal(w)))
     import former
     out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))

@@ -34,9 +34,9 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Письмо и судьбы v15');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Окружение ожило v16');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
-  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
+  self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
   try:st.theme_use('clam')
   except tk.TclError:pass
@@ -83,7 +83,7 @@ class App:
   try:self.root.focus_set()
   except Exception:pass
   return True
- def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor)
+ def blocked(self):return bool(self.job or self.battle or self.mini or self.modal or self.menu_open or self.transition or self.mentor or self.env_window)
  def persist(self):
   if not self.has_game:return
   try:
@@ -101,7 +101,7 @@ class App:
   except Exception:pass
   try:self.sound.set_volume(s['volume']);self.sound.set_music(s['music'])
   except Exception:pass
-  self.cache.clear()
+  self.cache.clear();self.env_cache.clear()
   if hasattr(self,'coverbtn'):self.coverbtn.config(text='Фон: заполнить' if self.cover else 'Фон: целиком')
   if hasattr(self,'map'):self.map.cache.clear()
   if getattr(self,'menu',None):self.menu.cache.clear()
@@ -126,7 +126,7 @@ class App:
  def save_slot(self,sid):
   meta.write_state(BASE,sid,self.world.s,0);self.toast('Сохранено','Слот: '+sid)
  def _swap(self,state):
-  self.world=World(self.npcs,state);self.npc=None;self.hover=None;self.stream_text.clear();self.draft_speech.clear();self.cache.clear();self.select_default()
+  self.world=World(self.npcs,state);self.npc=None;self.hover=None;self.env_hover=None;self.stream_text.clear();self.draft_speech.clear();self.cache.clear();self.select_default()
  def restart_ai(self):
   if self.battle or self.mini:return
   try:self.engine.shutdown()
@@ -248,7 +248,7 @@ class App:
   if self.view=='scene':self.view='map';self.canvas.grid_remove();self.map.c.grid();self.map.draw();self.mapbtn.config(text='К сцене · M')
   else:self.show_scene()
  def show_scene(self):
-  self.view='scene';self.map.c.grid_remove();self.canvas.grid();self.mapbtn.config(text='Карта · M');self.draw()
+  self.view='scene';self.env_hover=None;self.map.c.grid_remove();self.canvas.grid();self.mapbtn.config(text='Карта · M');self.draw()
  def travel(self,i):
   if i==self.world.s['loc']:return self.show_scene()
   if self.blocked():return self.status.config(text='Завершите действие перед переходом.')
@@ -258,7 +258,7 @@ class App:
    self.status.config(text='Переход без заставки: '+str(e));self.go(i);self.show_scene()
  def go(self,i):
   if self.blocked():return self.status.config(text='Завершите действие или отмените запрос перед переходом.')
-  self.sound.play('step');core.travel(self.world,i);self.propagate();self.hover=None;self.stream_text.clear();self.draft_speech.clear();self.select_default();self.persist();self.refresh();self.initiative('player_entered')
+  self.sound.play('step');core.travel(self.world,i);self.propagate();self.hover=None;self.env_hover=None;self.stream_text.clear();self.draft_speech.clear();self.select_default();self.persist();self.refresh();self.initiative('player_entered')
  def toggle_cover(self):self.cover=not self.cover;self.coverbtn.config(text='Фон: заполнить' if self.cover else 'Фон: целиком');self.draw()
  def draw(self):
   c=self.canvas;c.delete('all');w=max(1,c.winfo_width());h=max(1,c.winfo_height())
@@ -271,7 +271,21 @@ class App:
    if self.cover:im=ImageOps.fit(im,(w,h),method=Image.Resampling.LANCZOS)
    else:im.thumbnail((w,h),Image.Resampling.LANCZOS);bg=Image.new('RGB',(w,h),'#070b10');bg.paste(im,((w-im.width)//2,(h-im.height)//2));im=bg
    self.cache[key]=ImageTk.PhotoImage(im)
-  self.bgref=self.cache[key];c.create_image(0,0,anchor='nw',image=self.bgref);self.hits=[];self.bubble_hits=[];present=self.world.witnesses();pw=max(75,min(170,int(w*.18),int(h*.44/1.58)));ph=int(pw*1.58);gap=40;start=(w-len(present)*pw-max(0,len(present)-1)*gap)//2
+  self.bgref=self.cache[key];c.create_image(0,0,anchor='nw',image=self.bgref)
+  import hotspots16
+  hkey=(loc,w,h,self.cover)
+  if hkey not in self.env_cache:
+   if len(self.env_cache)>30:self.env_cache.clear()
+   self.env_cache[hkey]=(hotspots16.placed(BASE,loc,(w,h),self.cover),hotspots16.variant(BASE,loc))
+  self.env_shapes,self.scene_variant=self.env_cache[hkey]
+  for id,title,polygon in self.env_shapes:
+   coords=[v for xy in polygon for v in xy]
+   c.create_polygon(*coords,fill='',outline=GOLD if self.env_hover==id else '#8e8467',width=3 if self.env_hover==id else 1,dash=() if self.env_hover==id else (4,7))
+   if self.env_hover==id:
+    px,py=polygon[0];tx=max(35,min(w-300,int(px)));ty=max(56,min(h-54,int(py)-42))
+    c.create_rectangle(tx,ty,tx+min(295,w-40),ty+31,fill='#09121b',outline=GOLD,width=2)
+    c.create_text(tx+10,ty+15,text='☝ '+title+' · нажмите',anchor='w',fill=GOLD,font=('Segoe UI',10,'bold'))
+  self.hits=[];self.bubble_hits=[];present=self.world.witnesses();pw=max(75,min(170,int(w*.18),int(h*.44/1.58)));ph=int(pw*1.58);gap=40;start=(w-len(present)*pw-max(0,len(present)-1)*gap)//2
   c.create_rectangle(0,0,w,44,fill='#0b1420',stipple='gray50',outline='');c.create_text(14,15,text=NAMES[loc].upper(),anchor='w',fill=GOLD,font=('Segoe UI',10,'bold'))
   for i,k in enumerate(present):
    x=start+i*(pw+gap);y=max(40,h-ph-65);key=('npc',k,pw,ph)
@@ -302,12 +316,42 @@ class App:
   tx=max(left+14,min(left+bw-14,cx));tip=c.create_polygon(tx-7,rect[3],tx+7,rect[3],tx,rect[3]+9,fill='#101b26',outline=GOLD);c.tag_lower(tip,item);self.bubble_hits.append((rect,text,name))
  def motion(self,e):
   k=next((k for (x,y,r,b),k in self.hits if x<=e.x<=r and y<=e.y<=b),None)
-  if k!=self.hover:self.hover=k;self.canvas.config(cursor='hand2' if k else '');self.draw()
+  import hotspots16
+  target=hotspots16.hit(e.x,e.y,self.env_shapes) if not k else None
+  env=target[0] if target else None
+  if k!=self.hover or env!=self.env_hover:
+   self.hover=k;self.env_hover=env;self.canvas.config(cursor='hand2' if k or env else '');self.draw()
  def click(self,e):
   for (x,y,r,b),text,name in self.bubble_hits:
    if x<=e.x<=r and y<=e.y<=b:return self.text_window(name,text)
   self.motion(e)
   if self.hover and not self.blocked():self.sound.play('click');self.select(self.hover)
+  elif self.env_hover and not self.blocked():self.environment(self.env_hover)
+ def environment(self,id):
+  """Show a verified object from the visible background, never a generic invisible button."""
+  if self.blocked():return
+  import hotspots16
+  if id not in {key for key,_,_ in self.env_shapes}:return
+  title,meaning,action=hotspots16.LORE[id];win=self.window('Окружение · '+title,520,305);self.env_window=win
+  win.transient(self.root);win.grab_set()
+  box=tk.Frame(win,bg=PANEL);box.pack(fill='both',expand=True,padx=22,pady=16)
+  self.label(box,title,16,True,color=GOLD).pack(anchor='w',pady=(0,8))
+  self.label(box,meaning,11,wraplength=450,justify='left').pack(anchor='w',pady=(0,10))
+  owner={'tower':'polkan','pots':'hleb','shower':'kip','shelves':'cenz'}.get(id)
+  if owner:self.label(box,('Пока здесь распоряжается '+self.npcs[owner]['name']+'.' if core.in_power(self.world,owner) else 'Старый хозяин больше не распоряжается этим местом.'),10,color=MUTED).pack(anchor='w',pady=4)
+  def close():
+   try:win.grab_release();win.destroy()
+   except tk.TclError:pass
+   self.env_window=None
+  def use():
+   close()
+   try:
+    text=hotspots16.perform(self.world,id,self.scene_variant);self.persist();self.refresh();self.status.config(text=text)
+   except ValueError as e:self.status.config(text=str(e))
+  win.protocol('WM_DELETE_WINDOW',close)
+  row=tk.Frame(box,bg=PANEL);row.pack(side='bottom',fill='x',pady=8)
+  self.button(row,('Лечь до утра' if id in ('bed','cot','bunks') and core.is_night(self.world) else action),use,True).pack(side='left',padx=4)
+  self.button(row,'Назад',close).pack(side='right',padx=4)
  def refresh(self):
   s=self.world.s;rep=self.world.reputation(self.npc or 'zub')['public_respect'];t=core.tier(self.world)[0];c=core.C(self.world)
   self.hud.config(text=f"♥ {s['hp']}   ⚡ {s['stamina']}   ● {s['cig']}   ₽ {s['rub']}   ·   {t}")
