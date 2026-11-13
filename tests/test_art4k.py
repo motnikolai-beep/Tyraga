@@ -31,7 +31,7 @@ def digest(path):
 
 
 # Модули, тексты которых написаны сразу в редакции v12: сборка не должна менять в них ни слова.
-V12_NATIVE = ('story12.py', 'former.py', 'cast.py')
+V12_NATIVE = ('story12.py', 'former.py', 'cast.py', 'profile.py', 'social.py', 'story_social.py', 'zone_news.py')
 
 class Masters(unittest.TestCase):
     def test_every_location_has_a_unique_4k_master(self):

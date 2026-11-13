@@ -36,9 +36,11 @@ def env_set(base,key,val):
     p.write_text(text if text.endswith('\n') else text+'\n',encoding='utf8')
 
 # ---------- сохранения ----------
-def new_state(npcs,diff='normal'):
+def new_state(npcs,diff='normal',origin='paper'):
     from world import World
     w=World(npcs,None);d=core.DIFFS.get(diff,core.DIFFS['normal'])
+    import profile
+    w.s['profile']={'origin':origin if origin in profile.ORIGINS else 'paper'}
     w.s['cig']=d['cig'];w.s['rub']=d['rub'];w.s['meta']={'diff':diff if diff in core.DIFFS else 'normal','created':time.time(),'playtime':0,'saved':0}
     return w.s
 

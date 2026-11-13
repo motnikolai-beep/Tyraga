@@ -18,6 +18,7 @@ HOWTO="""УПРАВЛЕНИЕ
 • Проверки мудрости и харизмы — бросок d20 + ваш стат. Сигарета и силы повышают шанс, мини-игры тоже.
 • Сюжетные сцены ждут в локациях с золотой «!» на карте.
 • Свергнутый босс остаётся в зоне без власти. С ним можно помириться; обиженный однажды позовёт на разборку — не придёте до отбоя или проиграете, и он снова хозяин.
+• В меню «⋯» → «Личное дело» видны ваше прошлое, сытость, карма, вещи и отношения.
 • Статус растёт и падает от ваших поступков: Петух → Шестёрка → Мужик → Авторитет → Пахан.
 • Господь в Храме списывает часть грехов, но статус возвращается только делом.
 • Бой идёт в реальном времени (меню «⋯» → Дуэль): J/K — удары руками, U/I — ногами, L — блок, O — уклон, Пробел — кувырок, C — сигарета. Подробности — по клавише H в бою.
@@ -73,11 +74,16 @@ class Menu:
         for k,d in core.DIFFS.items():
             r=tk.Radiobutton(s.inner,text='%s\n%s'%(d['name'],d['desc']),variable=s.diffvar,value=k,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,justify='left',anchor='w',font=('Segoe UI',11),wraplength=560,padx=14,pady=8,indicatoron=0,width=60)
             r.pack(pady=4,padx=30)
+        import profile
+        s.note('Прошлое героя — сюжетная деталь, бонусов не даёт.',GOLD,10)
+        s.originvar=tk.StringVar(value='paper')
+        for key,(case,term,_story) in profile.ORIGINS.items():
+            tk.Radiobutton(s.inner,text=case+' · '+term,variable=s.originvar,value=key,bg=CARD,fg=FG,selectcolor='#2c4058',activebackground='#24364a',activeforeground=GOLD,indicatoron=0,width=60).pack(pady=2,padx=30)
         s.btn('Начать игру',s.start_new,True);s.btn('Назад',lambda:s.go('main'))
     def start_new(s):
         a=s.a
         if a.has_game and not messagebox.askyesno('Новая игра','Текущее автосохранение будет заменено новой игрой (копия сохранится в saves/before_newgame.json). Продолжить?'):return
-        a.new_game(s.diffvar.get());s.hide()
+        a.new_game(s.diffvar.get(),s.originvar.get());s.hide()
     def screen_slots(s,mode='load'):
         a=s.a;s.title('Загрузка' if mode=='load' else 'Сохранение',24)
         ids=(['auto','legacy'] if mode=='load' else [])+meta.SLOTS

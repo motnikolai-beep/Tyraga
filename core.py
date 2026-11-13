@@ -20,7 +20,7 @@ def diff(w):
 def default():
     return {'abs':7*60,'wis':5,'cha':5,'caste':0,'flags':{},'done':[],'stash':{},'inv':{'shiv':0,'phone':0,'tea':0,'key':0,'letter':0,'parcel':0},
             'ousted':[],'timers':[],'events_done':[],'weak':[],'meals':{},'pending':[],'talk':0,'gym':0,'temple_day':0,'ending':None,'feed':[],'counters':{},'last_random':-999,'poverka_day':0,
-            'ex':{}}  # ex — свергнутые боссы: кто, когда, помирились ли, что с реваншем (former.py)
+            'denounced':[],'friend_search_day':0,'news_day':0,'news':[],'npc_relations':{},'ex':{}}  # ex — свергнутые боссы: кто, когда, помирились ли, что с реваншем (former.py)
 
 def C(w):
     c=w.s.setdefault('core',default())
@@ -131,6 +131,16 @@ def apply(w,fx):
         elif k=='timer':c['timers'].append({'at':c['abs']+int(v.get('hours',24)*60),'id':v['id'],'vars':v.get('vars',{})})
         elif k=='learn_weak':
             if v not in c['weak']:c['weak'].append(v);out.append('Слабость найдена: '+w.npcs[v]['name'])
+        elif k=='friend_help':
+            import social
+            friend=social.friend(w)
+            if friend:out+=social.use_help(w,friend)
+        elif k=='ally_denunciation':
+            import social
+            ally=social.friend(w)
+            if ally:out+=social.hide(w,ally)
+        elif k=='queue_shmon':
+            c['pending'].insert(0,{'t':'scene','id':'shmon','protected':True})
         elif k=='counter':
             for n_,d_ in v.items():c['counters'][n_]=c['counters'].get(n_,0)+d_
         elif k in('peace','mock','revenge_off','duel','duel_ambush'):
@@ -177,6 +187,8 @@ def sleep(w,force=False):
     if force:w.s['stamina']=int(w.s['stamina_max']*.6);w.s['hp']=max(1,w.s['hp']-8)
     c['flags'].pop('storm_tonight',None);c['flags'].pop('letter_today',None);c['pending'].append({'t':'scene','id':'morning'});schedule_day(w)
     former.morning(w)
+    import zone_news
+    zone_news.morning(w)
 
 def hops(a,b):
     if a==b:return 0
@@ -197,12 +209,17 @@ def travel(w,dest):
     m=travel_minutes(w,dest);w.go(dest);advance(w,m)
     import former
     former.on_enter(w)
-    random_event(w,'travel');story_check(w)
+    import social
+    social.arrival(w)
+    random_event(w,'travel')
+    story_check(w)
 
 def talk(w):
     c=C(w);c['talk']+=1;m=7
     if c['talk']%3==0:m+=15;say(w,'Долгая болтовня: прошло ещё 15 минут.')
     advance(w,m)
+    import social
+    social.arrival(w)
     if w.rng.random()<.07:random_event(w,'talk',force=True)
 
 def contraband(w):
@@ -273,7 +290,12 @@ def story_check(w):
 
 def pop_pending(w):
     c=C(w)
-    return c['pending'].pop(0) if c['pending'] else None
+    if not c['pending']:return None
+    p=c['pending'].pop(0)
+    if p.get('id')=='shmon':
+        import social
+        return social.prepare_search(w,p)
+    return p
 
 def finish_scene(w,sid):
     c=C(w)
@@ -329,11 +351,14 @@ def req_ok(w,req):
         if k=='caste' and c['caste']<v:return False
         if k.startswith('item_') and c['inv'].get(k[5:],0)<v:return False
         if k=='weak' and v not in c['weak']:return False
+        if k=='friend':
+            import social
+            if not social.friend(w):return False
     return True
 
 def req_text(req):
     n={'cig':'сиг.','rub':'₽','dig':'участков подкопа','caste':'каста'}
-    return ', '.join('известная слабость' if k=='weak' else '%s %s'%(v,n.get(k,k.replace('item_',''))) for k,v in req.items())
+    return ', '.join('друг рядом (+40)' if k=='friend' else 'известная слабость' if k=='weak' else '%s %s'%(v,n.get(k,k.replace('item_',''))) for k,v in req.items())
 
 def resolve_choice(w,choice,game_ok=None,bonus=0,rng=None):
     info=None;ok=True
@@ -401,6 +426,9 @@ def journal(w):
     out.append(('Доска слабостей боссов',wk or ['Все боссы повержены.']))
     tf=[('✔ %s: %s — свободно, %s больше не хозяин'%(NAMES[l],what,w.npcs[b]['name'])) if b in c['ousted'] else ('✘ %s: %s — по правилам хозяина (%s)'%(NAMES[l],what,w.npcs[b]['name'])) for b,(l,a,what) in TURF.items() if b in w.npcs]
     out.append(('Хозяева локаций',tf))
+    import social,zone_news
+    out.append(('Свои и чужие',social.journal(w)))
+    out.append(('Слухи зоны',zone_news.journal(w)))
     import former
     out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))
     f=c['flags'];pl=[]

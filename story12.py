@@ -137,3 +137,4 @@ WEAK.update(WEAK12)
 for _b,_row in WEAK12.items():weak_scenes(_b,*_row)
 
 import former  # v12: свергнутые боссы остаются в зоне — их сцены «после падения» и реванш
+import story_social  # друг, враг, шмон

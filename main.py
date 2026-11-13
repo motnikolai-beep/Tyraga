@@ -108,7 +108,7 @@ class App:
   if self.has_game:self.draw()
  def toggle_fullscreen(self):
   self.settings['fullscreen']=not self.settings['fullscreen'];meta.save_settings(BASE,self.settings);self.apply_settings()
- def new_game(self,diff):
+ def new_game(self,diff,origin='paper'):
   if self.job:
    if self.cancel_event:self.cancel_event.set()
    self.job=None
@@ -116,7 +116,7 @@ class App:
   if p.exists():
    try:shutil.copy2(p,p.with_name('before_newgame.json'))
    except OSError:pass
-  self._swap(meta.new_state(self.npcs,diff));self.has_game=True;self.started=time.time();self.persist();core.story_check(self.world);self.refresh();self.toast('Новая игра','Сложность: '+core.diff(self.world)['name'])
+  self._swap(meta.new_state(self.npcs,diff,origin));self.has_game=True;self.started=time.time();self.persist();core.story_check(self.world);self.refresh();self.toast('Новая игра','Сложность: '+core.diff(self.world)['name'])
  def load_slot(self,sid):
   st=meta.read_state(BASE,sid)
   if self.job:
@@ -329,7 +329,7 @@ class App:
    b=tk.Button(self.actrow,text=txt,image=self.cardrefs[key],compound='left',command=lambda id=a['id']:self.do_activity(id),bg='#1d2b3c' if not off else '#121a24',fg=FG if not off else MUTED,activebackground='#2c4058',relief='flat',bd=0,font=('Segoe UI',9,'bold'),padx=8,pady=4,cursor='hand2' if not off else 'arrow',wraplength=150,justify='left')
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
-  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
+  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
   mb.config(menu=m);mb.grid(row=0,column=n,padx=(6,0))
  def card_key(self,i):
   if 1<=i<=len(self.acts):self.do_activity(self.acts[i-1]['id'])
@@ -379,6 +379,24 @@ class App:
     self.button(r,'Взять',lambda it=it:mv(it,False)).pack(side='right',padx=3);self.button(r,'Спрятать',lambda it=it:mv(it,True)).pack(side='right',padx=3)
    self.label(box,'При шмоне забирают заточки и мобильники, что при вас. Спрятанное шмон не находит.',9,color=MUTED).pack(anchor='w',pady=10)
   draw()
+ def profile_window(self):
+  """Личное дело: портрет героя, прошлое, характеристики, вещи и отношения."""
+  if not self.has_game:return
+  import profile
+  win=self.window('Личное дело',880,710)
+  outer=tk.Frame(win,bg=PANEL);outer.pack(fill='both',expand=True,padx=14,pady=14)
+  left=tk.Frame(outer,bg=PANEL);left.pack(side='left',anchor='n',padx=(0,14))
+  path=BASE/'assets/player.jpg'
+  if not path.is_file():path=BASE/'assets/player_avatar.png'  # старые пользовательские сборки
+  try:
+   image=Image.open(path).convert('RGB');image=ImageOps.fit(image,(235,370),method=Image.Resampling.LANCZOS,centering=(.5,.22))
+   win.portrait_ref=ImageTk.PhotoImage(image);tk.Label(left,image=win.portrait_ref,bg=PANEL).pack()
+  except (OSError,ValueError):self.label(left,'Портрет не найден',11).pack()
+  self.label(left,'ВЫ · '+profile.nickname(self.world),12,True,color=GOLD,wraplength=240).pack(pady=12)
+  frame=tk.Frame(outer,bg=PANEL);frame.pack(side='left',fill='both',expand=True)
+  bar=tk.Scrollbar(frame);bar.pack(side='right',fill='y')
+  txt=tk.Text(frame,wrap='word',bg='#0b1119',fg=FG,font=('Segoe UI',11),padx=14,pady=12,relief='flat',yscrollcommand=bar.set);txt.pack(side='left',fill='both',expand=True);bar.config(command=txt.yview)
+  txt.insert('1.0',profile.report(self.world));txt.config(state='disabled')
  def caste_window(self):
   r=core.caste_report(self.world);c=core.C(self.world)
   txt=f"СТАТУС: {r['tier']} ({r['score']:+d})\n{r['desc']}\n\nМудрость {c['wis']} · Харизма {c['cha']}\nПоверженные боссы: {', '.join(r['ousted']) or 'нет'}\n\nШкала: Петух ≤ −70 → Шестёрка → Мужик → Авторитет ≥ 35 → Пахан ≥ 70 (и минимум 2 поверженных босса).\n\nПодъём: победы в драках, свержение боссов, успешные проверки, помощь.\nПадение: крысятничество, кражи, проигрыши, подставы.\nГосподь в Храме списывает часть грехов (карму), но не статус — его возвращает только дело.\n\nСюжетных сцен пройдено: {len(c['done'])}/{sum(1 for s in SCENES.values() if s['story'])}\nКонцовка: {c['ending'] or 'ещё не выбрана'}"
@@ -430,11 +448,15 @@ class App:
   if self.blocked() or not self.npc:return
   k=self.npc;w=self.window('Решения · '+self.npcs[k]['name'],680,500)
   def do(fn):
-   try:fn();self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
+   try:
+    fn()
+    import social
+    social.arrival(self.world)
+    self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
   for t,kind in [('Помочь · 2 сигареты','help'),('Украсть · +15₽, NPC заметит','theft'),('Сдать охране · +25₽','betrayal')]:self.button(w,t,lambda kind=kind:do(lambda:self.world.decision(k,kind))).pack(fill='x',padx=15,pady=4)
   def companion():self.world.s['companion']=k
-  self.button(w,'Назначить напарником (остаётся здесь)',lambda:do(companion)).pack(fill='x',padx=15,pady=4);self.button(w,'Занять 10₽ до завтра',lambda:do(lambda:self.world.borrow(k))).pack(fill='x',padx=15,pady=4);self.button(w,'Вернуть долг',lambda:do(lambda:self.world.repay(k))).pack(fill='x',padx=15,pady=4)
+  self.button(w,'Назначить напарником (прикроет рядом при отношении +40)',lambda:do(companion)).pack(fill='x',padx=15,pady=4);self.button(w,'Занять 10₽ до завтра',lambda:do(lambda:self.world.borrow(k))).pack(fill='x',padx=15,pady=4);self.button(w,'Вернуть долг',lambda:do(lambda:self.world.repay(k))).pack(fill='x',padx=15,pady=4)
   def deny():
    pop=self.window('Оспорить слух',750,500)
    for g in self.world.heard(k):self.button(pop,g['claim'][:100],lambda id=g['id']:(do(lambda:self.world.deny(k,id)),pop.destroy())).pack(fill='x',padx=10,pady=3)

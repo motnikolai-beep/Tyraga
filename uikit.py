@@ -38,9 +38,9 @@ class EventWindow:
             im=Image.open(s.a.base/('assets/%s.jpg'%s.a.npcs[who]['portrait'])).resize((220,347),Image.Resampling.LANCZOS);s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p']);s.who.config(text=core.shown_name(s.w,who))
         else:
             try:
-                im=Image.open(s.a.base/'assets/player_avatar.png').resize((200,200));s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p'])
+                im=Image.open(s.a.base/('assets/player.jpg' if (s.a.base/'assets/player.jpg').is_file() else 'assets/player_avatar.png')).resize((200,200));s.refs['p']=ImageTk.PhotoImage(im);s.portrait.config(image=s.refs['p'])
             except Exception:pass
-            s.who.config(text='Рассказчик')
+            s.who.config(text='Ваш герой' if (s.a.base/'assets/player.jpg').is_file() else 'Рассказчик')
     def show(s,node):
         n=s.sc['nodes'][node];s.cur=n;s.setport(n.get('who'));s.res.config(text='')
         s.text.config(state='normal');s.text.delete('1.0','end');s.text.insert('1.0',core.render_text(n['text'],s.vars));s.text.config(state='disabled');s.redraw()

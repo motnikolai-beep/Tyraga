@@ -58,8 +58,9 @@ def npc_lore(w,k):
         elif ALL in d:out.append(d[ALL])
     import former
     out+=former.lore(w,k)  # бывший босс помнит своё падение; зона помнит, кто вернул себе власть
-    if c['flags'].get('friend_'+k):out.append('Вы с игроком друзья.')
-    if c['flags'].get('enemy_'+k):out.append('Вы с игроком враги.')
+    # Friendship is a CURRENT relationship, not a permanent memory flag after reconciliation.
+    if w.s['relations'].get(k,0)>=40:out.append('Вы с игроком друзья.')
+    if w.s['relations'].get(k,0)<=-40:out.append('Вы с игроком враги.')
     for b in c['ousted']:
         if b!=k:out.append('Игрок сверг босса «%s». Все в зоне об этом знают.'%w.npcs[b]['name'])
     out+=[e['text'] for e in w.s['events'] if e.get('kind')=='daily' and k in e.get('witnesses',[])][-2:]

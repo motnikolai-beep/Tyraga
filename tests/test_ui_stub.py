@@ -189,4 +189,29 @@ class MastersOfPlaces(unittest.TestCase):
     app.select('polkan');self.assertEqual(app.npc,'polkan');app.close_chat(True)
     self.assertIn('ex_polkan',list(__import__('story_data').available(app.world)))
    finally:main.BASE=original
+class SocialDossierUI(unittest.TestCase):
+ """Stub widgets exercise navigation and event flow; this is NOT a real Windows/Tk screenshot."""
+ def test_profile_scene_and_friend_search(self):
+  import core,profile
+  original=main.BASE
+  with tempfile.TemporaryDirectory() as td,patch.object(main.ImageTk,'PhotoImage',lambda x:object()),patch.object(main.App,'connect',lambda s:None):
+   b=Path(td);shutil.copytree(original/'assets',b/'assets');shutil.copy(original/'npcs.json',b/'npcs.json');env(original,b);main.BASE=b
+   try:
+    app=main.App(Widget());app.new_game('normal','cat');app.menu.hide()
+    app.profile_window()
+    def walk(widget):
+     yield widget
+     for child in widget.children:yield from walk(child)
+    self.assertTrue(any('Оскорбление начальственного кота' in x.content for x in walk(app.root)))
+    self.assertEqual(profile.origin(app.world),profile.ORIGINS['cat'])
+    app.world.s['relations']['kol']=45;app.world.s['companion']='kol'
+    core.C(app.world)['inv']['shiv']=1
+    core.C(app.world)['pending'][:]=[{'t':'scene','id':'shmon'}]
+    app.pump();self.assertEqual(app.modal.sid,'friend_search')
+    app.modal.pick(app.modal.cur['ch'][0]);app.modal.finish()
+    self.assertEqual(core.C(app.world)['inv']['shiv'],0)
+    self.assertEqual(core.stash_get(app.world,0)['shiv'],1)
+    self.assertFalse(core.C(app.world)['pending'])
+   finally:main.BASE=original
+
 if __name__=='__main__':unittest.main()

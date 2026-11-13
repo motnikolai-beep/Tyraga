@@ -65,7 +65,7 @@ def generate_chat(engine,w,k,text,on_text,cancel):
  c=w.context(k);n=w.npcs[k];hist=[dict(m) for m in w.s['history'].get(k,[]) if isinstance(m,dict) and m.get('role') in ('user','assistant') and isinstance(m.get('content'),str)]
  count=max(0,int(engine.cfg['CHAT_HISTORY_MESSAGES']));hist=hist[-count:] if count else []
  if hist and hist[0]['role']=='assistant':hist=hist[1:]
- ctx={'место':c['location'],'отношение':c['relationship'],'уважуха':c['respect']['public_respect'],'карма':w.s['karma'],'память':c['memory'],'факты':c['known_facts'],'слухи':c['heard_rumors'],'долги':c['obligations'],'статус_игрока':c['player'],'сюжет':c['lore']}
+ ctx={'место':c['location'],'отношение':c['relationship'],'уважуха':c['respect']['public_respect'],'карма':w.s['karma'],'память':c['memory'],'факты':c['known_facts'],'слухи':c['heard_rumors'],'отношения_жителей':c['npc_relations'],'долги':c['obligations'],'статус_игрока':c['player'],'сюжет':c['lore']}
  import former
  role=former.role(w,k)  # у свергнутого босса к прежнему характеру дописано, кем он стал
  system=PROMPT.format(name=n['name'],role=role)+'\n'+json.dumps(ctx,ensure_ascii=False)
