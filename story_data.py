@@ -354,6 +354,7 @@ def available(w,loc=None):
         if 'loc' in tr and tr['loc']!=L:continue
         if _ok(w,tr):yield sid
 
+import story20  # v20: новые жители клуба и мастерской
 import story17  # v17: заметка у койки и последствия
 import story15  # v15: три дня письма и быт
 import story10  # v10: события дня, реакции на касту, дела, слабости, скрытые концовки

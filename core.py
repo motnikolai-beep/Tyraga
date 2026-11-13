@@ -196,6 +196,8 @@ def sleep(w,force=False):
     former.morning(w)
     import zone_news
     zone_news.morning(w)
+    import calendar20
+    calendar20.notice(w)
 
 def hops(a,b):
     if a==b:return 0
@@ -447,6 +449,11 @@ def journal(w):
     if route18.eligible(w):out.append(('Почтовый вопрос Шкета',route18.journal(w)))
     import jubilee19
     out.append(('Подготовка юбилея',jubilee19.journal(w)))
+    import jubilee20
+    if jubilee20.journal(w):out.append(('Юбилейный вечер',jubilee20.journal(w)))
+    import calendar20,gear20
+    out.append(('Календарь',calendar20.journal(w)))
+    out.append(('Снаряжение и ящики',gear20.journal(w)))
     out.append(('Судьбы хозяев',boss15.journal(w)))
     import former
     out.append(('Бывшие боссы',former.journal(w) or ['Пока никто не свергнут. Свергнутый босс остаётся в зоне: с ним можно помириться, а можно дождаться реванша.']))

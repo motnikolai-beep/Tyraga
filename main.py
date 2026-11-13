@@ -34,7 +34,7 @@ class Status:
   else:self.l.grid_remove()
 class App:
  def __init__(self,root):
-  self.root=root;root.title('Тюряга · Подготовка юбилея v19');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
+  self.root=root;root.title('Тюряга · Календарь и снаряжение v20');root.geometry('1540x980');root.minsize(1120,800);root.configure(bg=BG);root.columnconfigure(0,weight=1);root.rowconfigure(1,weight=1)
   self.npcs=json.loads((BASE/'npcs.json').read_text(encoding='utf8'));self.base=BASE;self.base_data=BASE;self.settings=meta.load_settings(BASE);self.path=meta.slot_path(BASE,'auto');state=meta.load_any(BASE);self.has_game=state is not None;self.menu_open=False;self.started=time.time();self.cover=self.settings['cover']
   self.world=World(self.npcs,state);self.engine=Engine(BASE);self.sound=Sound(BASE,self.settings['volume'],self.settings['music']);self.q=queue.Queue();self.liveq=queue.Queue();self.job=None;self.cancel_event=None;self.connected=False;self.closed=False;self.npc=None;self.hover=None;self.hits=[];self.bubble_hits=[];self.cache={};self.navrefs={};self.battle=None;self.battle_window=None;self.mini=None;self.modal=None;self.transition=None;self.mentor=None;self.env_window=None;self.env_hover=None;self.env_shapes=[];self.env_cache={};self.view='scene';self.cardrefs={};self.acts=[];self.stream_text={};self.draft_speech={}
   st=ttk.Style(root)
@@ -358,12 +358,15 @@ class App:
     close()
     try:
      text=fn();self.persist();self.refresh();self.status.config(text=text)
+     if 'Юбилейный вечер' in text or 'В благодарность за подготовку' in text:self.text_window('Юбилейный вечер',text)
     except ValueError as e:self.status.config(text=str(e))
    if r['theme'] is None:
     for theme,title in [('voices','Голоса жителей'),('records','Двадцать строк истории'),('quiet','Тихий вечер')]:
      self.button(box,title,lambda theme=theme:jubilee(lambda:jubilee19.plan(self.world,theme))).pack(anchor='w',pady=2)
    elif not r['rehearsed']:
     self.button(box,'Проверить площадку для вечера',lambda:jubilee(lambda:jubilee19.rehearse(self.world))).pack(anchor='w',pady=2)
+   elif not __import__('jubilee20').state(self.world)['held']:
+    self.button(box,'Провести юбилейный вечер',lambda:jubilee(lambda:__import__('jubilee20').host(self.world))).pack(anchor='w',pady=2)
   if id=='bed':
    import note17
    if not note17.state(self.world)['found']:
@@ -377,7 +380,9 @@ class App:
  def refresh(self):
   s=self.world.s;rep=self.world.reputation(self.npc or 'zub')['public_respect'];t=core.tier(self.world)[0];c=core.C(self.world)
   self.hud.config(text=f"♥ {s['hp']}   ⚡ {s['stamina']}   ● {s['cig']}   ₽ {s['rub']}   ·   {t}")
-  self.clock.config(text=f"День {s['day']} · {core.hhmm(self.world)} {core.phase(self.world)}")
+  import calendar20
+  date=calendar20.today(self.world)
+  self.clock.config(text=f"День {s['day']} · {date:%d.%m.%Y} · {core.hhmm(self.world)} {core.phase(self.world)}")
   self.title.config(text=NAMES[s['loc']]);self.hint.config(text='Местные: '+(', '.join(self.npcs[k]['name'] for k in self.world.witnesses()) or 'никого'))
   present=self.world.witnesses()
   if not self.npc or self.npc not in present:self.select_default()
@@ -402,7 +407,7 @@ class App:
    b=tk.Button(self.actrow,text=txt,image=self.cardrefs[key],compound='left',command=lambda id=a['id']:self.do_activity(id),bg='#1d2b3c' if not off else '#121a24',fg=FG if not off else MUTED,activebackground='#2c4058',relief='flat',bd=0,font=('Segoe UI',9,'bold'),padx=8,pady=4,cursor='hand2' if not off else 'arrow',wraplength=150,justify='left')
    b.grid(row=0,column=i,sticky='ew',padx=2)
   mb=tk.Menubutton(self.actrow,text='⋯',bg=CARD,fg=FG,relief='flat',font=('Segoe UI',14,'bold'),padx=14,pady=4,cursor='hand2');m=tk.Menu(mb,tearoff=0,bg=PANEL,fg=FG)
-  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
+  for t,fn in [('Говорить · Enter',self.open_chat),('Решения',self.decisions),('Снаряжение',self.equipment),('Коллекция и ящики',self.wardrobe),('Календарь',self.calendar_window),('Личное дело',self.profile_window),('Дуэль',self.fight),('Схрон',self.stash_window),('Задания · J',self.journal_window),('Статус и каста',self.caste_window),('История разговора · F2',self.show_history),('Новый разговор с NPC',self.reset_chat),('Уважуха',self.respect_window),('Постоянные жители',self.residents),('Подключить ИИ',self.connect),('Журналы мира (отладка)',self.journal),('Лог сервера',lambda:self.text_window('llama-server',self.engine.tail()))]:m.add_command(label=t,command=fn)
   mb.config(menu=m);mb.grid(row=0,column=n,padx=(6,0));self.morebtn=mb
  def card_key(self,i):
   if 1<=i<=len(self.acts):self.do_activity(self.acts[i-1]['id'])
@@ -487,7 +492,7 @@ class App:
   except (OSError,ValueError):self.label(left,'Портрет не найден',11).pack()
   self.label(left,'ВЫ · '+profile.nickname(self.world),12,True,color=GOLD,wraplength=240).pack(pady=12)
   import equipment13
-  gear=equipment13.stats(self.world)
+  gear=__import__('gear20').stats(self.world,equipment13.stats(self.world))
   for kind,text in [(gear['weapon'],gear['name']),(('armor' if self.world.s['gear'].get('armor',2)>=7 else 'boots'),'Броня: '+str(gear['armor']))]:
    row=tk.Frame(left,bg=PANEL);row.pack(fill='x',pady=3)
    pic=self.item_icon(kind,38)
@@ -557,7 +562,7 @@ class App:
  def residents(self):self.text_window('Местные жители','\n\n'.join(NAMES[i]+': '+', '.join(n['name'] for n in self.npcs.values() if n['home']==i) for i in range(12)))
  def decisions(self):
   if self.blocked() or not self.npc:return
-  k=self.npc;w=self.window('Решения · '+self.npcs[k]['name'],680,500)
+  k=self.npc;w=self.window('Решения · '+self.npcs[k]['name'],680,720)
   def do(fn):
    try:
     fn()
@@ -565,7 +570,16 @@ class App:
     social.arrival(self.world)
     self.propagate();self.persist();self.refresh();w.destroy();self.initiative('decision')
    except ValueError as e:messagebox.showinfo('Решение',str(e))
-  import jubilee19
+  import calendar20
+  if k in ('cal','zv'):
+   self.button(w,'Совместное дело · '+('памятные даты' if k=='cal' else 'ремонт вещей'),lambda:do(lambda:calendar20.collaboration(self.world,k))).pack(fill='x',padx=15,pady=4)
+  if k in calendar20.BIRTHDAYS and any(t=='birthday' and key==k for t,key,_ in calendar20.today_events(self.world)):
+   for title,choice in [('Поздравить с днём рождения','greet'),('Подарить сигарету на день рождения','gift')]:
+    self.button(w,title,lambda choice=choice:do(lambda:calendar20.celebrate(self.world,'birthday',k,choice))).pack(fill='x',padx=15,pady=4)
+  import jubilee19,jubilee20
+  if k in jubilee19.state(self.world)['invited'] and jubilee19.state(self.world)['rehearsed'] and k not in jubilee20.state(self.world)['decisions'] and not jubilee20.state(self.world)['held']:
+   for label,yes in [('Согласиться участвовать в юбилейном вечере',True),('Отказаться от юбилейного вечера',False)]:
+    self.button(w,label,lambda yes=yes:do(lambda:jubilee20.consent(self.world,k,yes))).pack(fill='x',padx=15,pady=3)
   if k in jubilee19.GUESTS and jubilee19.state(self.world)['theme'] is not None and k not in jubilee19.state(self.world)['invited']:
    self.button(w,'Пригласить обсудить юбилейный вечер',lambda:do(lambda:jubilee19.invite(self.world,k))).pack(fill='x',padx=15,pady=4)
   import route18
@@ -598,6 +612,52 @@ class App:
    if not path.is_file():return None
    self.cardrefs[key]=ImageTk.PhotoImage(Image.open(path).resize((size,size),Image.Resampling.LANCZOS))
   return self.cardrefs[key]
+ def calendar_window(self):
+  if self.blocked():return
+  import calendar20
+  win=self.window('Календарь зоны',680,460);date=calendar20.today(self.world)
+  self.label(win,f'Игровая дата: {date:%d.%m.%Y}',16,True,color=GOLD).pack(anchor='w',padx=20,pady=12)
+  events=calendar20.today_events(self.world)
+  if not events:self.label(win,'Сегодня обычный день. Ближайшие праздники видны в руководстве.',11).pack(anchor='w',padx=20)
+  for kind,key,text in events:
+   self.label(win,(key if kind=='holiday' else text)+' · '+(text if kind=='holiday' else 'найдите именинника в его локации'),11,wraplength=620,justify='left').pack(anchor='w',padx=20,pady=4)
+   if kind=='holiday':
+    for title,choice in [('Присоединиться · внутриигровой ящик','join'),('Побыть рядом · +5 сил','observe')]:
+     def choose(choice=choice,key=key):
+      try:
+       result=calendar20.celebrate(self.world,'holiday',key,choice);self.persist();self.refresh();self.status.config(text=result);win.destroy()
+      except ValueError as e:messagebox.showinfo('Календарь',str(e))
+     self.button(win,title,choose).pack(anchor='w',padx=20,pady=3)
+  self.button(win,'Закрыть',win.destroy).pack(anchor='e',padx=20,pady=12)
+
+ def wardrobe(self):
+  if self.blocked():return
+  import gear20
+  win=self.window('Коллекция снаряжения',840,860);box=tk.Frame(win,bg=PANEL);box.pack(fill='both',expand=True,padx=16,pady=10)
+  def draw():
+   for child in box.winfo_children():child.destroy()
+   r=gear20.state(self.world)
+   self.label(box,f'Ящики: {r["boxes"]} · детали: {r["scrap"]} · ₽ {self.world.s["rub"]}',14,True,color=GOLD).pack(anchor='w',pady=5)
+   self.label(box,'Шансы: обычное 60% · редкое 28% · эпичное 10% · легендарное 2%. Каждый 10-й — не ниже редкого. Только игровые ₽.',9,color=MUTED).pack(anchor='w',pady=3)
+   def apply(fn):
+    try:
+     result=fn();self.persist();self.refresh();draw();self.status.config(text=result)
+    except ValueError as e:messagebox.showinfo('Снаряжение',str(e))
+   row=tk.Frame(box,bg=PANEL);row.pack(fill='x',pady=4)
+   self.button(row,'Купить ящик · 25 игровых ₽',lambda:apply(lambda:gear20.buy_box(self.world))).pack(side='left',padx=3)
+   self.button(row,'Открыть ящик',lambda:apply(lambda:gear20.open_box(self.world))).pack(side='left',padx=3)
+   for slot in gear20.SLOTS:
+    item=r['equipped'].get(slot)
+    if item:self.button(box,'Снять: '+gear20.ITEMS[item][0],lambda slot=slot:apply(lambda:gear20.unequip(self.world,slot))).pack(anchor='w',pady=2)
+   for item,lv in r['items'].items():
+    name,rarity,slot,dmg,armor,crit=gear20.ITEMS[item];row=tk.Frame(box,bg=PANEL);row.pack(fill='x',pady=1)
+    effect=('урон '+str(16+dmg+lv) if slot=='weapon' else 'броня +'+str(armor+lv) if slot=='armor' else 'шанс крит. +%.1f%%'%((crit+lv*.01)*20))
+    cost=' · улучшение: %d дет., %d ₽'%(lv+1,8*(lv+1)) if lv<3 else ' · улучшено до предела'
+    self.label(row,f'{gear20.RARITIES[rarity][0]} · {name} +{lv} · {effect}{cost}',10).pack(side='left',fill='x',expand=True)
+    self.button(row,'Надеть',lambda item=item:apply(lambda:gear20.equip(self.world,item))).pack(side='right',padx=2)
+    self.button(row,'Улучшить',lambda item=item:apply(lambda:gear20.upgrade(self.world,item))).pack(side='right',padx=2)
+  draw()
+
  def equipment(self):
   if self.blocked():return
   import equipment13

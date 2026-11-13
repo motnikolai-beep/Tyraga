@@ -62,7 +62,8 @@ def section(w, title):
 class Roster(unittest.TestCase):
     def test_twelve_bosses_one_per_location(self):
         bosses = {k for k, v in NP.items() if v['boss']}
-        self.assertEqual(len(NP), 18)
+        self.assertEqual(len(NP), 20)
+        self.assertTrue({'cal','zv'} <= set(NP))
         self.assertEqual(len(bosses), 12)
         self.assertEqual(sorted(NP[k]['home'] for k in bosses), list(range(12)))
         self.assertEqual({k: NP[k]['home'] for k in NEW}, NEW)

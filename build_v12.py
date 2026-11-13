@@ -250,7 +250,7 @@ def build(root=ROOT):
 def validate(dest):
     for p in list(dest.glob('*.py'))+list((dest/'tests').glob('*.py')):ast.parse(p.read_text(encoding='utf8'))
     n=json.loads((dest/'npcs.json').read_text(encoding='utf8'))
-    assert len(n)==18 and len(NPC)==12 and set(NEW_BOSSES)<=set(n)
+    assert len(n)>=18 and len(NPC)==12 and set(NEW_BOSSES)<=set(n)
     for k,v in n.items():
         assert 0<=v['home']<12
         assert all(c in n for c in v['contacts'])

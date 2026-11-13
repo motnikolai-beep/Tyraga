@@ -81,7 +81,7 @@ class FightEngine:
         style=STYLES.get(k,DEFAULT_STYLE);s.style=style;s.revenge=former.revenge_now(w,k);boss=s.boss=core.in_power(w,k) or s.revenge
         mx=s.mx=120 if boss else 90;ef=max(.02,min(1.0,S['npc_health'].get(k,mx)/mx));pf=max(.02,min(1.0,S['hp']/100))
         import equipment13
-        gear=equipment13.stats(w)
+        gear=__import__('gear20').stats(w,equipment13.stats(w))
         s.p=Fighter('player',W_ARENA*.32,1,pf,min(S['stamina'],S['stamina_max']),gear['damage']/16.0*gear['power'],gear['armor'],gear['speed'],1.0)
         s.p.regen_bonus=gear['regen'];s.crit_bonus=max(0,gear['accuracy']-.72)*.2;s.special_ready=equipment13.levels(w).get('power',0)>0;s.special_cd=0.0
         s.e=Fighter('enemy',W_ARENA*.68,-1,ef,70+20*boss,style['power'],style['armor'],style['speed'],style['hp']*(1.15 if boss else .9))
